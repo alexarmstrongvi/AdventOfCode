@@ -31,7 +31,7 @@ def main():
         print(f'{line} -> {digits} -> {val}')
         vals.append(val)
     print(sum(vals))
-    with open('day1_solution.txt', 'w') as ofile:
+    with open('solution.txt', 'w') as ofile:
         for val in vals:
             ofile.write(f'{val}\n')
         ofile.write(f'\n{sum(vals)}\n')

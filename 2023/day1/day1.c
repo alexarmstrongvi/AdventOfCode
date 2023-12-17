@@ -46,7 +46,7 @@ optionalArgs parse_argv(int argc, char* argv[]) {
 }
 
 int main(int argc, char* argv[]) {
-    //////////////////////////////////////////////////////////////////////////// 
+    ////////////////////////////////////////////////////////////////////////////
     // Setup
     optionalArgs args = parse_argv(argc, argv);
     if (args.none) {
@@ -59,20 +59,20 @@ int main(int argc, char* argv[]) {
         printf("ERROR | Unable to open file: %s\n", args.input_path);
         return 1;
     }
-    
-    //////////////////////////////////////////////////////////////////////////// 
+
+    ////////////////////////////////////////////////////////////////////////////
     // Main computations
     int sum = 0;
     char line[LINE_LEN_MAX];
     while (fgets(line, sizeof(line), file) != NULL) {
         // TODO: Handle empty lines in input file
         int calibration_val = parse_calibration_value(line);
-        /* printf("DEBUG | %d <- %s", calibration_val, line); */        
+        /* printf("DEBUG | %d <- %s", calibration_val, line); */
         sum = sum + calibration_val;
     }
     printf("INFO | sum = %d\n", sum);
-    
-    //////////////////////////////////////////////////////////////////////////// 
+
+    ////////////////////////////////////////////////////////////////////////////
     // Tear down
     fclose(file);
 
@@ -104,7 +104,7 @@ int parse_calibration_value(char line[]) {
 }
 
 optionalDigit parse_digit_prefix(char str[]) {
-    optionalDigit digit; 
+    optionalDigit digit;
     digit = parse_digit_char_prefix(str[0]);
     if (!digit.none) {
         return digit;
@@ -129,9 +129,7 @@ optionalDigit parse_digit_char_prefix(char c) {
 inline int to_digit(char c){
     return c - '0';
 }
-const int N_DIGITS = 10;
-const int MAX_LEN_DIGIT_STR = 6;
-const char digit_strings[N_DIGITS][MAX_LEN_DIGIT_STR] = {
+static const char* DIGIT_STRINGS[] = {
     "zero",
     "one",
     "two",
@@ -143,13 +141,14 @@ const char digit_strings[N_DIGITS][MAX_LEN_DIGIT_STR] = {
     "eight",
     "nine",
 };
+static const int N_DIGITS = sizeof(DIGIT_STRINGS) / sizeof(DIGIT_STRINGS[0]);
 // TODO: Make this more efficient with a Trie
 optionalDigit parse_digit_str_prefix(char str[]){
     /* printf("DEBUG | Checking for digit string in %s", str); */
     for (size_t i = 0; i < N_DIGITS; i++) {
-        /* printf("DEBUG | Checking for digit string %zu %s\n", i, digit_strings[i]); */
-        if (strncmp(str, digit_strings[i], strlen(digit_strings[i])) == 0) {
-            /* printf("DEBUG | Matched digit string %zu %s\n", i, digit_strings[i]); */
+        /* printf("DEBUG | Checking for digit string %zu %s\n", i, DIGIT_STRINGS[i]); */
+        if (strncmp(str, DIGIT_STRINGS[i], strlen(DIGIT_STRINGS[i])) == 0) {
+            /* printf("DEBUG | Matched digit string %zu %s\n", i, DIGIT_STRINGS[i]); */
             optionalDigit digit = {
                 .none = false,
                 .val    = i,
