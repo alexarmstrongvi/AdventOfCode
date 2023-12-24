@@ -1,0 +1,14 @@
+INFO | R0 part #s: [467]
+INFO | R1 part #s: []
+INFO | R2 part #s: [35, 633]
+INFO | R3 part #s: []
+INFO | R4 part #s: [617]
+INFO | R5 part #s: [58]
+INFO | R6 part #s: [592]
+INFO | R7 part #s: [755]
+INFO | R8 part #s: []
+INFO | R9 part #s: [664, 598]
+INFO | Gear [R1,C3] : [467, 35] -> 16345
+INFO | Gear [R8,C5] : [755, 598] -> 451490
+Part 1 solution: 4419
+Part 2 solution: 467835
