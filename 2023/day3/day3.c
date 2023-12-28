@@ -11,135 +11,155 @@
 #define UNUSED_PARAMETER(x) ((void)(x))
 
 // TODO: How to inline (getting linker errors)
-// TODO: Create hash map
 ////////////////////////////////////////////////////////////////////////////////
+// Utility functions
 int sign(int n) {
     return (n > 0) - (n < 0);
 }
+/* Round up (away from zero) to nearest power of 2, preserving sign */
 int ceil_power_of_2(int n) {
     if (n == 0) {
         return 2;
     }
     return pow(2, floor(log2(abs(n)))+1) * sign(n);
 }
+/* Get number of digits in decimal representation of integer */
 int n_digits(int n) {
     if (n == 0 || n == 1) {
         return 1;
-    } 
+    }
     return (int) ceil(log10(abs(n))) + (n<0);
 }
 ////////////////////////////////////////////////////////////////////////////////
-// TODO: #define VECTOR(T) ... define struct, constructor, destructor, realloc
-typedef struct {
-    char *data;
-    size_t size;
-    size_t capacity;
-} vector_char_t;
+// Utility macros
+#define _STR(x) #x
+#define STR(x) _STR(x)
+#define _CONCAT(x,y) x##y
+#define CONCAT(x,y) _CONCAT(x,y)
 
-void vector_char_clear(vector_char_t *this) {
-    this->data     = NULL;
-    this->capacity = 0;
-    this->size     = 0;
+// Dynamic array
+// TODO: Handle arrays of objects that need to be destroyed
+// TODO: Handle zeroing vector, clearing vector, and destroying vector
+// TODO: Handle failures to allocate or reallocate memory
+#define DECLARE_VECTOR(T, VEC, FUNC) \
+typedef struct { \
+    T *data; \
+    size_t size; \
+    size_t capacity; \
+} VEC; \
+VEC  CONCAT(FUNC,_construct)(size_t capacity); \
+void CONCAT(FUNC,_destroy)(VEC *this); \
+/* Clear vector while retaining reference to data array */ \
+void CONCAT(FUNC,_clear)(VEC *this); \
+/* Reset vector, setting array pointer to NULL */ \
+void CONCAT(FUNC,_nullify)(VEC *this); \
+void CONCAT(FUNC,_init)(VEC *this, size_t capacity); \
+int CONCAT(FUNC,_resize)(VEC *this); \
+int CONCAT(FUNC,_push_back)(VEC *this, T entry); \
+int CONCAT(FUNC,_extend)(VEC *this, VEC vec);
+
+/* Define dynamic array generic methods for user struct but leave init and
+ * destroy to be defined by */
+#define _DEFINE_VECTOR_GENERIC(T, VEC, FUNC) \
+VEC CONCAT(FUNC,_construct)(size_t capacity) { \
+    VEC vec; \
+    CONCAT(FUNC,_init)(&vec, capacity); \
+    return vec; \
+} \
+void CONCAT(FUNC,_nullify)(VEC *this) { \
+    this->data     = NULL; \
+    this->capacity = 0; \
+    this->size     = 0; \
+} \
+int CONCAT(FUNC,_resize)(VEC *this) { \
+    size_t capacity = (size_t) ceil_power_of_2(this->capacity); \
+    T * new_data = realloc(this->data, capacity * sizeof(T)); \
+    if (new_data == NULL) { \
+        printf("WARNING | Failed to reallocate memory for VEC\n"); \
+        return EXIT_FAILURE; \
+    } \
+    this->data = new_data; \
+    this->capacity = capacity; \
+    return EXIT_SUCCESS; \
+} \
+int CONCAT(FUNC,_push_back)(VEC *this, T entry) { \
+    if (this->size == this->capacity) { \
+        int status = CONCAT(FUNC,_resize)(this); \
+        if (status == EXIT_FAILURE) { \
+            return EXIT_FAILURE; \
+        } \
+    } \
+    this->data[this->size] = entry; \
+    this->size += 1; \
+    return EXIT_SUCCESS; \
+} \
+int CONCAT(FUNC,_extend)(VEC *this, VEC vec) { \
+    for (size_t i = 0; i < vec.size; i++) { \
+        int status = CONCAT(FUNC,_push_back)(this, vec.data[i]); \
+        if (status == EXIT_FAILURE) { \
+            return EXIT_FAILURE; \
+        } \
+    } \
+    return EXIT_SUCCESS; \
 }
-void vector_char_init(vector_char_t *this, size_t capacity) {
-    vector_char_clear(this);
-    if (capacity > 0) {
-        this->data = (char *) calloc(capacity, sizeof(char));
-        if (this->data == NULL) {
-            printf("WARNING | Failed to allocate memory for vector_char_t\n");
-        }
-        this->capacity = capacity;
-    }
+
+
+#define DEFINE_VECTOR(T, VEC, FUNC) \
+_DEFINE_VECTOR_GENERIC(T, VEC, FUNC) \
+void CONCAT(FUNC,_init)(VEC *this, size_t capacity) { \
+    CONCAT(FUNC,_nullify)(this); \
+    if (capacity > 0) { \
+        this->data = (T *) calloc(capacity, sizeof(T)); \
+        if (this->data == NULL) { \
+            printf("WARNING | Failed to allocate memory for VEC\n"); \
+        } \
+        this->capacity = capacity; \
+    } \
+} \
+void CONCAT(FUNC,_destroy)(VEC *this) { \
+    free(this->data); \
+    CONCAT(FUNC,_nullify)(this); \
+} \
+void CONCAT(FUNC,_clear)(VEC *this) { \
+    this->data     = memset(this->data, 0, this->size * sizeof(T)); \
+    this->size     = 0; \
 }
-vector_char_t vector_char_construct(size_t capacity) {
-    vector_char_t vec;
-    vector_char_init(&vec, capacity);
-    return vec;
-}
-void vector_char_destroy(vector_char_t *this) {
-    free(this->data);
-    vector_char_clear(this);
-}
-void vector_char_resize(vector_char_t *this) {
-    size_t capacity = (size_t) ceil_power_of_2(this->capacity);
-    this->data = (char *) realloc(this->data, capacity * sizeof(char));
-    if (this->data == NULL) {
-        printf("WARNING | Failed to realloc more memory for vector_char\n");
-    } else {
-        this->capacity = capacity;
-        /* printf("DEBUG | Reallocated %zu elements to vector_char_t\n", this->capacity); */
-    }
-}
-void vector_char_push_back(vector_char_t *this, char entry) {
-    if (this->size == this->capacity) {
-        /* printf("DEBUG | Before resizing:[%p, %p) [%zu]\n", (void *)this->data, (void *)(this->data + this->capacity), this->capacity); */
-        vector_char_resize(this);
-        /* printf("DEBUG | After resizing :[%p, %p) [%zu]\n", (void *)this->data, (void *)(this->data + this->capacity), this->capacity); */
-    }
-    this->data[this->size] = entry;
-    this->size += 1;
-}
-void vector_char_extend(vector_char_t *this, vector_char_t vec) {
-    for (size_t i = 0; i < vec.size; i++) {
-        vector_char_push_back(this, vec.data[i]);
-    }
-}
+
+// TODO #define DEFINE_VECTOR_USERTYPE(T, T_FUNC, VEC, VEC_FUNC) \
 
 ////////////////////////////////////////////////////////////////////////////////
 typedef struct {
-    int *data;
-    size_t size;
-    size_t capacity;
-} vector_int_t;
+    int i;
+    int j;
+    char val;
+} point2d_char_t;
+typedef struct {
+    int first;
+    int second;
+} pair_int_t;
 
-void vector_int_clear(vector_int_t *this) {
-    this->data     = NULL;
-    this->capacity = 0;
-    this->size     = 0;
-}
-void vector_int_init(vector_int_t *this, int capacity) {
-    vector_int_clear(this);
-    if (capacity > 0) {
-        this->data = (int *) calloc(capacity, sizeof(int));
-        if (this->data == NULL) {
-            printf("WARNING | Failed to allocate memory for vector_int_t\n");
-        }
-        this->capacity = capacity;
-    }
-}
-vector_int_t vector_int_construct(int capacity) {
-    vector_int_t vec;
-    vector_int_init(&vec, capacity);
-    return vec;
-}
-void vector_int_destroy(vector_int_t *this) {
-    free(this->data);
-    vector_int_clear(this);
-}
-void vector_int_resize(vector_int_t *this) {
-    size_t capacity = (size_t) ceil_power_of_2(this->capacity);
-    this->data = (int *) realloc(this->data, capacity * sizeof(int));
-    if (this->data == NULL) {
-        printf("WARNING | Failed to realloc more memory for vector_int\n");
-    } else {
-        this->capacity = capacity;
-        /* printf("DEBUG | Reallocated %zu elements to vector_int_t\n", this->capacity); */
-    }
-}
-void vector_int_push_back(vector_int_t *this, int entry) {
-    if (this->size == this->capacity) {
-        /* printf("DEBUG | Before resizing:[%p, %p) [%zu]\n", (void *)this->data, (void *)(this->data + this->capacity), this->capacity); */
-        vector_int_resize(this);
-        /* printf("DEBUG | After resizing :[%p, %p) [%zu]\n", (void *)this->data, (void *)(this->data + this->capacity), this->capacity); */
-    }
-    this->data[this->size] = entry;
-    this->size += 1;
-}
-void vector_int_extend(vector_int_t *this, vector_int_t vec) {
-    for (size_t i = 0; i < vec.size; i++) {
-        vector_int_push_back(this, vec.data[i]);
-    }
-}
+DECLARE_VECTOR(char, vector_char_t, vector_char)
+DEFINE_VECTOR(char, vector_char_t, vector_char)
+DECLARE_VECTOR(int, vector_int_t, vector_int)
+DEFINE_VECTOR(int, vector_int_t, vector_int)
+DECLARE_VECTOR(point2d_char_t, vector_point2d_char_t, vector_point2d_char)
+DEFINE_VECTOR(point2d_char_t, vector_point2d_char_t, vector_point2d_char)
+
+typedef struct {
+    pair_int_t first;
+    vector_int_t second;
+} pair_pair_int_and_vector_int_t;
+DECLARE_VECTOR(pair_pair_int_and_vector_int_t, vector_pair_pair_int_and_vector_int_t, pair_pair_int_and_vector_int)
+// TODO: Fix memory leak in default vector that frees data memory without calling
+// destroy on each vector entry
+/* DEFINE_VECTOR_USERTYPE( */
+/*     pair_pair_int_and_vector_int_t, */
+/*     pair_pair_int_and_vector_int, */
+/*     vector_pair_pair_int_and_vector_int_t, */
+/*     pair_pair_int_and_vector_int */
+/* ) */
+DEFINE_VECTOR(pair_pair_int_and_vector_int_t, vector_pair_pair_int_and_vector_int_t, pair_pair_int_and_vector_int)
+
 int vector_int_sum(vector_int_t vec) {
     int sum = 0;
     for (size_t i = 0; i < vec.size; i++) {
@@ -174,63 +194,7 @@ vector_char_t vector_int_to_str(vector_int_t vec) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-typedef struct {
-    int i;
-    int j;
-    char val;
-} point2d_char_t;
-
-typedef struct {
-    point2d_char_t *data;
-    size_t size;
-    size_t capacity;
-} vector_point2d_char_t;
-
-void vector_point2d_char_clear(vector_point2d_char_t *this) {
-    this->data     = NULL;
-    this->capacity = 0;
-    this->size     = 0;
-}
-void vector_point2d_char_init(vector_point2d_char_t *this, size_t capacity) {
-    vector_point2d_char_clear(this);
-    if (capacity > 0) {
-        this->data = (point2d_char_t *) calloc(capacity, sizeof(point2d_char_t));
-        if (this->data == NULL) {
-            printf("WARNING | Failed to allocate memory for vector_point2d_char_t\n");
-        }
-        this->capacity = capacity;
-    }
-}
-vector_point2d_char_t vector_point2d_char_construct(size_t capacity) {
-    vector_point2d_char_t vec;
-    vector_point2d_char_init(&vec, capacity);
-    return vec;
-}
-void vector_point2d_char_destroy(vector_point2d_char_t *this) {
-    free(this->data);
-    vector_point2d_char_clear(this);
-}
-void vector_point2d_char_resize(vector_point2d_char_t *this) {
-    size_t capacity = (size_t) ceil_power_of_2(this->capacity);
-    this->data = (point2d_char_t *) realloc(this->data, capacity * sizeof(point2d_char_t));
-    if (this->data == NULL) {
-        printf("WARNING | Failed to realloc more memory for vector_point2d_char\n");
-    } else {
-        this->capacity = capacity;
-        /* printf("DEBUG | Reallocated %zu elements to vector_point2d_char_t\n", this->capacity); */
-    }
-}
-void vector_point2d_char_push_back(vector_point2d_char_t *this, point2d_char_t entry) {
-    if (this->size == this->capacity) {
-        /* printf("DEBUG | Before resizing:[%p, %p) [%zu]\n", (void *)this->data, (void *)(this->data + this->capacity), this->capacity); */
-        vector_point2d_char_resize(this);
-        /* printf("DEBUG | After resizing :[%p, %p) [%zu]\n", (void *)this->data, (void *)(this->data + this->capacity), this->capacity); */
-    }
-    this->data[this->size] = entry;
-    this->size += 1;
-}
-
-////////////////////////////////////////////////////////////////////////////////
+// Day 3 supporting functions
 bool is_symbol(char c) {
     return (c != '.') && (!isdigit(c));
 }
@@ -246,71 +210,69 @@ char * getnum(int *num, char *str) {
     return NULL;
 }
 ssize_t getline_laglead(
-    vector_char_t *p_line,
-    vector_char_t *p_prev, 
+    vector_char_t *p_curr,
+    vector_char_t *p_prev,
     vector_char_t *p_next,
     FILE *fp
 ){
     ssize_t line_size;
-    bool at_top = p_line->data == NULL;
-    if (at_top) { // Reading first line
-        line_size = getline(&p_line->data, &p_line->capacity, fp);
-        if (line_size == EOF) { 
-            vector_char_clear(p_line);
+    if (ftell(fp) == 0) { // Reading first line
+        line_size = getline(&p_curr->data, &p_curr->capacity, fp);
+        if (line_size == EOF) {
+            vector_char_clear(p_curr);
             return EOF; // No lines to read
         } else {
             // Remove newline char
-            p_line->data[line_size-1] = '\0';
-            p_line->size = (size_t) line_size-1;
+            p_curr->data[line_size-1] = '\0';
+            p_curr->size = (size_t) line_size-1;
         }
         line_size = getline(&p_next->data, &p_next->capacity, fp);
-        if (line_size == EOF) { // 2+ lines to read
+        if (line_size == EOF) { // 1 line to read
             vector_char_clear(p_next);
-        } else {
+        } else { // 2+ lines to read
             p_next->data[line_size-1] = '\0';
             p_next->size = (size_t) line_size-1;
         }
-        return p_line->size; // 1-2 lines to read
+        return p_curr->size; // 1+ lines to read
     }
-    bool at_bottom = p_next->data == NULL && p_line->data != NULL;
-    if (at_bottom) {
-        vector_char_clear(p_line);
+    if (feof(fp)) { // No more lines to read
+        vector_char_clear(p_curr);
         vector_char_clear(p_prev);
-        return EOF; // No more lines to read
+        return EOF;
     }
     // Shift line info to struct for previous line
     // Shift "next" line to "prev" line to be overwritten by getline
     vector_char_t tmp = *p_prev;
-    *p_prev = *p_line;
-    *p_line  = *p_next;
+    *p_prev = *p_curr;
+    *p_curr = *p_next;
     *p_next = tmp;
-    vector_char_clear(&tmp);
-    
+    vector_char_nullify(&tmp);
+
     // Store new line info in p_next
     line_size = getline(&p_next->data, &p_next->capacity, fp);
-    if (line_size == EOF) { 
+    if (line_size == EOF) {
         vector_char_clear(p_next);
     } else {
         p_next->data[line_size-1] = '\0';
         p_next->size = (size_t) line_size-1;
     }
-    return p_line->size;
+    return p_curr->size;
 }
 
 vector_point2d_char_t get_border(
-    vector_char_t curr, 
-    size_t start, 
-    size_t end, 
-    vector_char_t prev, 
+    vector_char_t curr,
+    size_t start,
+    size_t end,
+    vector_char_t prev,
     vector_char_t next
 ) {
     size_t capacity = (end-start) * 2 + 2;
     vector_point2d_char_t border = vector_point2d_char_construct(capacity);
 
-    bool at_top    = prev.data == NULL;
+    bool at_top    = prev.size == 0;
     bool at_left   = start == 0;
     bool at_right  = end == curr.size;
-    bool at_bottom = next.data == NULL;
+    bool at_bottom = next.size == 0;
     /* printf("DEBUG | [L,B,T,R] = [%i,%i,%i,%i]\n", at_left, at_bottom, at_top, at_right); */
 
     if (!at_left) {
@@ -319,7 +281,7 @@ vector_point2d_char_t get_border(
     if (at_right) {
         end = curr.size-1;
     }
-    
+
     char c = '\0';
     // Process previous row
     if (!at_top) {
@@ -365,6 +327,19 @@ vector_point2d_char_t get_border(
     return border;
 }
 
+pair_pair_int_and_vector_int_t * find_gear(
+    vector_pair_pair_int_and_vector_int_t gears,
+    pair_int_t coord
+) {
+    for (size_t i = 0; i < gears.size; i++) {
+        pair_int_t gear_coord = gears.data[i].first;
+        if (coord.first == gear_coord.first && coord.second == gear_coord.second) {
+            return &gears.data[i];
+        }
+    }
+    return NULL;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
     UNUSED_PARAMETER(argc);
@@ -379,14 +354,14 @@ int main(int argc, char *argv[]) {
 
     // Computations
     vector_int_t part_numbers = vector_int_construct(2);
-    vector_char_t curr, prev, next;
-    vector_char_clear(&prev);
-    vector_char_clear(&curr);
-    vector_char_clear(&next);
+    vector_pair_pair_int_and_vector_int_t possible_gears;
+    vector_char_t prev = vector_char_construct(0);
+    vector_char_t curr = vector_char_construct(0);
+    vector_char_t next = vector_char_construct(0);
     int row_idx = -1;
     while (getline_laglead(&curr, &prev, &next, fp) != EOF) {
         row_idx++;
-        /* if (row_idx != 9) {continue;} // TESTING */
+        /* if (row_idx < 9) {continue;} // TESTING */
         /* printf("DEBUG | \n"); */
         /* printf("DEBUG |     %s\n",    prev.data != NULL ? prev.data : "\n"); */
         /* printf("DEBUG | R%i) %s\n", row_idx, curr.data != NULL ? curr.data  : "\n"); */
@@ -408,12 +383,20 @@ int main(int argc, char *argv[]) {
                 }
                 symbol_found = true;
                 /* if (pnt.val == '*') { */
+                /*     // TODO: update_gear(possible_gears, coords, num); */
                 /*     pair_int_t coords = { */
-                /*         .i = pnt.i + row_idx, */ 
-                /*         .j = pnt.j */
+                /*         .first  = pnt.i + row_idx, */
+                /*         .second = pnt.j */
+                /*     }; */
+                /*     pair_pair_int_and_vector_int_t *possible_gear = find_gear(possible_gears, coords); */
+                /*     if (possible_gear == NULL) { */
+                /*         vector_int_t gear_nums */
+                /*         pair_pair_int_and_vector_int_t new_gear = { */
+                /*             .first = coords, */
+                /*             .second = gear_nums; */
+                /*         } */
                 /*     } */
-                /*     list_int_t *val = map_pair_int_get(&possible_gears, coords); */
-                /*     list_int_push_back(&gear_nums, num); */
+                /*     vector_pair_pair_int_and_vector_int_push_back(&possible_gears, possible_gear); */
                 /* } */
             }
             vector_point2d_char_destroy(&border);
@@ -432,14 +415,33 @@ int main(int argc, char *argv[]) {
     /* vector_char_t print_str = vector_int_to_str(part_numbers); */
     /* printf("DEBUG | Part numbers: %s\n", print_str.data); */
     /* vector_char_destroy(&print_str); */
+    /* int gear_ratio_sum = 0; */
+    /* for (size_t i = 0; i < possible_gears.size; i++) { */
+    /*     vector_pair_pair_int_and_vector_int_t possible_gear = possible_gears[i].second; */
+    /*     vector_int_t gear_nums = possible_gear.second; */
+    /*     if (gear_nums.size != 2) { */
+    /*         continue; */
+    /*     } */
+    /*     pair_int_t gear_coord = possible_gear.first; */
+    /*     int gear_ratio = gear_nums[0] * gear_nums[1]; */
+    /*     printf("INFO | Gear [R%i,C%i] : [%i, %i] -> %i", */
+    /*         gear_coord.first, */
+    /*         gear_coord.second, */
+    /*         gear_nums[0], */
+    /*         gear_nums[1], */
+    /*         gear_ratio_sum */
+    /*     ); */
+    /*     gear_ratio_sum += gear_ratio; */
+    /* } */
 
     printf("INFO | Part 1 solution: %i\n", vector_int_sum(part_numbers));
+    /* printf("INFO | Part 2 solution: %i\n", gear_ratio_sum); */
 
     // Tear down
     fclose(fp);
+    vector_char_destroy(&prev);
     vector_char_destroy(&curr);
     vector_char_destroy(&next);
-    vector_char_destroy(&prev);
     vector_int_destroy(&part_numbers);
     return EXIT_SUCCESS;
 }

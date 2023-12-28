@@ -28,7 +28,8 @@ ops="$ops -std=c17"
 ops="$ops -g" # generate debug info
 ops="$ops -I include"
 ops="$ops -o build/${exe}"
-clang $ops "$file"
+# ops="$ops -Ofast"
+time clang $ops "$file"
 exe_args="${@:2}"
 
 if [ $? -eq 0 ]; then

@@ -1,28 +1,24 @@
 #include "stdio.h" // printf, FILE, fopen, fgets, fclose
-#include "string.h" // strcmp
-#include "ctype.h" // isdigit
 #include "stdbool.h" // bool, true, false
+#include "ctype.h" // isdigit
+#include "string.h" // strncmp
+#include <stdlib.h> // free
 
 // Constants
-static const int LINE_LEN_MAX = 256;
+enum {
+    LINE_LEN_MAX = 256,
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 // headers
-typedef struct {
-    bool none;
-    int val;
-} optionalDigit;
-
-const optionalDigit NO_DIGIT = {
-    .none = true,
-    .val  = -1,
-};
 
 int parse_calibration_value(char*);
-optionalDigit parse_digit_prefix(char*);
-optionalDigit parse_digit_char_prefix(char);
+int parse_digit_prefix(char*);
+int parse_digit_char_prefix(char);
 int to_digit(char);
-optionalDigit parse_digit_str_prefix(char*);
+int parse_digit_str_prefix(char*);
+
+const int NO_DIGIT_PARSED = -1;
 
 ////////////////////////////////////////////////////////////////////////////////
 typedef struct {
@@ -54,8 +50,8 @@ int main(int argc, char* argv[]) {
     }
     /* printf("DEBUG | Reading from file: %s\n", args.input_path); */
 
-    FILE *file = fopen(args.input_path, "r");
-    if (!file) {
+    FILE *fp = fopen(args.input_path, "r");
+    if (!fp) {
         printf("ERROR | Unable to open file: %s\n", args.input_path);
         return 1;
     }
@@ -63,9 +59,11 @@ int main(int argc, char* argv[]) {
     ////////////////////////////////////////////////////////////////////////////
     // Main computations
     int sum = 0;
-    char line[LINE_LEN_MAX];
-    while (fgets(line, sizeof(line), file) != NULL) {
-        // TODO: Handle empty lines in input file
+    char *line = NULL;
+    size_t line_cap = 0;
+    ssize_t line_len;
+    while((line_len = getline(&line, &line_cap, fp)) > 0) {
+        // TODO: Handle empty lines in input fp
         int calibration_val = parse_calibration_value(line);
         /* printf("DEBUG | %d <- %s", calibration_val, line); */
         sum = sum + calibration_val;
@@ -74,56 +72,53 @@ int main(int argc, char* argv[]) {
 
     ////////////////////////////////////////////////////////////////////////////
     // Tear down
-    fclose(file);
+    fclose(fp);
+    if (line != NULL) {
+        free(line);
+    }
 
     return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Implementations
-int parse_calibration_value(char line[]) {
-    bool first_digit_unset = true;
-    int first_digit = -1;
-    int second_digit = -1;
+int parse_calibration_value(char* line) {
+    int first_digit = NO_DIGIT_PARSED;
+    int second_digit = NO_DIGIT_PARSED;
     size_t i = 0;
     while (line[i] != '\n') {
         /* printf("DEBUG | line[%zu] = %c\n", i, line[i]); */
-        optionalDigit digit = parse_digit_prefix(line + i);
+        int digit = parse_digit_prefix(line + i);
         i++;
-        if (digit.none) {
+        if (digit == NO_DIGIT_PARSED) {
             continue;
         }
-        if (first_digit_unset) {
-            first_digit_unset = false;
-            first_digit = digit.val;
+        if (first_digit == NO_DIGIT_PARSED) {
+            first_digit = digit;
         }
-        second_digit = digit.val;
+        second_digit = digit;
     }
     // TODO: Handle case where no calibration value is found
     return 10*first_digit + second_digit;
 }
 
-optionalDigit parse_digit_prefix(char str[]) {
-    optionalDigit digit;
+int parse_digit_prefix(char str[]) {
+    int digit;
     digit = parse_digit_char_prefix(str[0]);
-    if (!digit.none) {
+    if (digit != NO_DIGIT_PARSED) {
         return digit;
     }
     digit = parse_digit_str_prefix(str);
-    if (!digit.none) {
+    if (digit != NO_DIGIT_PARSED) {
         return digit;
     }
-    return NO_DIGIT;
+    return NO_DIGIT_PARSED;
 }
-optionalDigit parse_digit_char_prefix(char c) {
+int parse_digit_char_prefix(char c) {
     if (!isdigit(c)){
-        return NO_DIGIT;
+        return NO_DIGIT_PARSED;
     }
-    optionalDigit digit = {
-        .none = false,
-        .val    = to_digit(c),
-    };
-    return digit;
+    return to_digit(c);
 }
 
 inline int to_digit(char c){
@@ -143,18 +138,14 @@ static const char* DIGIT_STRINGS[] = {
 };
 static const int N_DIGITS = sizeof(DIGIT_STRINGS) / sizeof(DIGIT_STRINGS[0]);
 // TODO: Make this more efficient with a Trie
-optionalDigit parse_digit_str_prefix(char str[]){
+int parse_digit_str_prefix(char str[]){
     /* printf("DEBUG | Checking for digit string in %s", str); */
-    for (size_t i = 0; i < N_DIGITS; i++) {
-        /* printf("DEBUG | Checking for digit string %zu %s\n", i, DIGIT_STRINGS[i]); */
-        if (strncmp(str, DIGIT_STRINGS[i], strlen(DIGIT_STRINGS[i])) == 0) {
-            /* printf("DEBUG | Matched digit string %zu %s\n", i, DIGIT_STRINGS[i]); */
-            optionalDigit digit = {
-                .none = false,
-                .val    = i,
-            };
-            return digit;
+    for (size_t digit = 0; digit < N_DIGITS; digit++) {
+        /* printf("DEBUG | Checking for digit string %zu %s\n", digit, DIGIT_STRINGS[digit]); */
+        if (strncmp(str, DIGIT_STRINGS[digit], strlen(DIGIT_STRINGS[digit])) == 0) {
+            /* printf("DEBUG | Matched digit string %zu %s\n", digit, DIGIT_STRINGS[digit]); */
+            return digit; 
         }
     }
-    return NO_DIGIT;
+    return NO_DIGIT_PARSED;
 }

@@ -14,10 +14,8 @@ digit_strings = (
     "nine",
 )
 def main():
-    path = Path(sys.argv[1])
-    lines = path.read_text().splitlines()
     vals = []
-    for line in lines:
+    for line in Path(sys.argv[1]).open('r'):
         digits = []
         for i in range(len(line)):
             if line[i].isdigit():
@@ -28,8 +26,9 @@ def main():
                     digits.append(digit)
                     break
         val = 10*digits[0] + digits[-1]
-        print(f'{line} -> {digits} -> {val}')
+        print(f'{line.strip()} -> {digits} -> {val}')
         vals.append(val)
+
     print(sum(vals))
     with open('solution.txt', 'w') as ofile:
         for val in vals:
