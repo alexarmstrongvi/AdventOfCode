@@ -38,8 +38,8 @@ def main():
         print(f'INFO | Gear [R{i},C{j}] : {nums} -> {gear_ratio}')
         gear_ratios.append(gear_ratio)
 
-    print('Part 1 solution:', sum(part_numbers))
-    print('Part 2 solution:', sum(gear_ratios))
+    print('INFO | Part 1 solution:', sum(part_numbers))
+    print('INFO | Part 2 solution:', sum(gear_ratios))
 
 def is_symbol(c):
     return c != '.' and not c.isdigit()

@@ -6,6 +6,8 @@
 #include <limits.h> // INT_MAX
 #include <string.h>
 
+// TODO: Update to using pointers where there is unecessary copying
+
 // TODO: Function overloading in C
 #define FREE(x) do {free(x); (x) = NULL;} while (0)
 #define UNUSED_PARAMETER(x) ((void)(x))
@@ -39,7 +41,6 @@ int n_digits(int n) {
 
 // Dynamic array
 // TODO: Handle arrays of objects that need to be destroyed
-// TODO: Handle zeroing vector, clearing vector, and destroying vector
 // TODO: Handle failures to allocate or reallocate memory
 #define DECLARE_VECTOR(T, VEC, FUNC) \
 typedef struct { \
@@ -149,7 +150,8 @@ typedef struct {
     pair_int_t first;
     vector_int_t second;
 } pair_pair_int_and_vector_int_t;
-DECLARE_VECTOR(pair_pair_int_and_vector_int_t, vector_pair_pair_int_and_vector_int_t, pair_pair_int_and_vector_int)
+DECLARE_VECTOR(pair_pair_int_and_vector_int_t, vector_pair_pair_int_and_vector_int_t, vector_pair_pair_int_and_vector_int)
+
 // TODO: Fix memory leak in default vector that frees data memory without calling
 // destroy on each vector entry
 /* DEFINE_VECTOR_USERTYPE( */
@@ -158,7 +160,7 @@ DECLARE_VECTOR(pair_pair_int_and_vector_int_t, vector_pair_pair_int_and_vector_i
 /*     vector_pair_pair_int_and_vector_int_t, */
 /*     pair_pair_int_and_vector_int */
 /* ) */
-DEFINE_VECTOR(pair_pair_int_and_vector_int_t, vector_pair_pair_int_and_vector_int_t, pair_pair_int_and_vector_int)
+DEFINE_VECTOR(pair_pair_int_and_vector_int_t, vector_pair_pair_int_and_vector_int_t, vector_pair_pair_int_and_vector_int)
 
 int vector_int_sum(vector_int_t vec) {
     int sum = 0;
@@ -317,7 +319,7 @@ vector_point2d_char_t get_border(
     if (!at_bottom) {
         for (size_t j = start; j < end+1; j++) {
             point2d_char_t pnt = {
-                .i   = -1,
+                .i   = 1,
                 .j   = j,
                 .val = next.data[j]
             };
@@ -340,6 +342,25 @@ pair_pair_int_and_vector_int_t * find_gear(
     return NULL;
 }
 
+void update_gear(
+    vector_pair_pair_int_and_vector_int_t *p_possible_gears,
+    pair_int_t coords,
+    int num
+) {
+    pair_pair_int_and_vector_int_t *p_possible_gear = \
+        find_gear(*p_possible_gears, coords);
+    if (p_possible_gear == NULL) {
+        pair_pair_int_and_vector_int_t new_gear = {
+            .first = coords,
+            .second = vector_int_construct(2),
+        };
+        vector_pair_pair_int_and_vector_int_push_back(p_possible_gears, new_gear);
+        p_possible_gear = &p_possible_gears->data[p_possible_gears->size-1];
+    } 
+    vector_int_t *gear_nums = &p_possible_gear->second;
+    vector_int_push_back(gear_nums, num);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
     UNUSED_PARAMETER(argc);
@@ -354,14 +375,13 @@ int main(int argc, char *argv[]) {
 
     // Computations
     vector_int_t part_numbers = vector_int_construct(2);
-    vector_pair_pair_int_and_vector_int_t possible_gears;
+    vector_pair_pair_int_and_vector_int_t possible_gears = vector_pair_pair_int_and_vector_int_construct(2);
     vector_char_t prev = vector_char_construct(0);
     vector_char_t curr = vector_char_construct(0);
     vector_char_t next = vector_char_construct(0);
     int row_idx = -1;
     while (getline_laglead(&curr, &prev, &next, fp) != EOF) {
         row_idx++;
-        /* if (row_idx < 9) {continue;} // TESTING */
         /* printf("DEBUG | \n"); */
         /* printf("DEBUG |     %s\n",    prev.data != NULL ? prev.data : "\n"); */
         /* printf("DEBUG | R%i) %s\n", row_idx, curr.data != NULL ? curr.data  : "\n"); */
@@ -382,22 +402,13 @@ int main(int argc, char *argv[]) {
                     continue;
                 }
                 symbol_found = true;
-                /* if (pnt.val == '*') { */
-                /*     // TODO: update_gear(possible_gears, coords, num); */
-                /*     pair_int_t coords = { */
-                /*         .first  = pnt.i + row_idx, */
-                /*         .second = pnt.j */
-                /*     }; */
-                /*     pair_pair_int_and_vector_int_t *possible_gear = find_gear(possible_gears, coords); */
-                /*     if (possible_gear == NULL) { */
-                /*         vector_int_t gear_nums */
-                /*         pair_pair_int_and_vector_int_t new_gear = { */
-                /*             .first = coords, */
-                /*             .second = gear_nums; */
-                /*         } */
-                /*     } */
-                /*     vector_pair_pair_int_and_vector_int_push_back(&possible_gears, possible_gear); */
-                /* } */
+                if (pnt.val == '*') {
+                    pair_int_t coords = {
+                        .first  = pnt.i + row_idx,
+                        .second = pnt.j
+                    };
+                    update_gear(&possible_gears, coords, num);
+                }
             }
             vector_point2d_char_destroy(&border);
 
@@ -412,36 +423,39 @@ int main(int argc, char *argv[]) {
         vector_int_extend(&part_numbers, curr_part_numbers);
         vector_int_destroy(&curr_part_numbers);
     }
-    /* vector_char_t print_str = vector_int_to_str(part_numbers); */
-    /* printf("DEBUG | Part numbers: %s\n", print_str.data); */
-    /* vector_char_destroy(&print_str); */
-    /* int gear_ratio_sum = 0; */
-    /* for (size_t i = 0; i < possible_gears.size; i++) { */
-    /*     vector_pair_pair_int_and_vector_int_t possible_gear = possible_gears[i].second; */
-    /*     vector_int_t gear_nums = possible_gear.second; */
-    /*     if (gear_nums.size != 2) { */
-    /*         continue; */
-    /*     } */
-    /*     pair_int_t gear_coord = possible_gear.first; */
-    /*     int gear_ratio = gear_nums[0] * gear_nums[1]; */
-    /*     printf("INFO | Gear [R%i,C%i] : [%i, %i] -> %i", */
-    /*         gear_coord.first, */
-    /*         gear_coord.second, */
-    /*         gear_nums[0], */
-    /*         gear_nums[1], */
-    /*         gear_ratio_sum */
-    /*     ); */
-    /*     gear_ratio_sum += gear_ratio; */
-    /* } */
+
+    // Compute gear ratio sum for part 2
+    int gear_ratio_sum = 0;
+    for (size_t i = 0; i < possible_gears.size; i++) {
+        pair_pair_int_and_vector_int_t possible_gear = possible_gears.data[i];
+        vector_int_t gear_nums = possible_gear.second;
+        if (gear_nums.size != 2) {
+            continue;
+        }
+        pair_int_t gear_coord = possible_gear.first;
+        int gear_ratio = gear_nums.data[0] * gear_nums.data[1];
+        printf("INFO | Gear [R%i,C%i] : [%i, %i] -> %i\n",
+            gear_coord.first,
+            gear_coord.second,
+            gear_nums.data[0],
+            gear_nums.data[1],
+            gear_ratio
+        );
+        gear_ratio_sum += gear_ratio;
+    }
 
     printf("INFO | Part 1 solution: %i\n", vector_int_sum(part_numbers));
-    /* printf("INFO | Part 2 solution: %i\n", gear_ratio_sum); */
+    printf("INFO | Part 2 solution: %i\n", gear_ratio_sum);
 
     // Tear down
     fclose(fp);
+    vector_int_destroy(&part_numbers);
+    vector_pair_pair_int_and_vector_int_destroy(&possible_gears);
     vector_char_destroy(&prev);
     vector_char_destroy(&curr);
     vector_char_destroy(&next);
-    vector_int_destroy(&part_numbers);
+
+    system("leaks day3");
+
     return EXIT_SUCCESS;
 }

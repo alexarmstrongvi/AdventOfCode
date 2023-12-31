@@ -483,5 +483,5 @@ INFO | Gear [R138,C58] : [119, 488] -> 58072
 INFO | Gear [R138,C80] : [942, 416] -> 391872
 INFO | Gear [R138,C120] : [631, 917] -> 578627
 INFO | Gear [R138,C66] : [880, 209] -> 183920
-Part 1 solution: 539637
-Part 2 solution: 82818007
+INFO | Part 1 solution: 539637
+INFO | Part 2 solution: 82818007
