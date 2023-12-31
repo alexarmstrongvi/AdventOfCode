@@ -42,6 +42,11 @@ int n_digits(int n) {
 // Dynamic array
 // TODO: Handle arrays of objects that need to be destroyed
 // TODO: Handle failures to allocate or reallocate memory
+typedef enum {
+    ALLOC_SUCCESS,
+    ALLOC_FAILURE,
+} AllocStatus;
+
 #define DECLARE_VECTOR(T, VEC, FUNC) \
 typedef struct { \
     T *data; \
@@ -54,10 +59,10 @@ void CONCAT(FUNC,_destroy)(VEC *this); \
 void CONCAT(FUNC,_clear)(VEC *this); \
 /* Reset vector, setting array pointer to NULL */ \
 void CONCAT(FUNC,_nullify)(VEC *this); \
-void CONCAT(FUNC,_init)(VEC *this, size_t capacity); \
-int CONCAT(FUNC,_resize)(VEC *this); \
-int CONCAT(FUNC,_push_back)(VEC *this, T entry); \
-int CONCAT(FUNC,_extend)(VEC *this, VEC vec);
+AllocStatus CONCAT(FUNC,_init)(VEC *this, size_t capacity); \
+AllocStatus CONCAT(FUNC,_resize)(VEC *this); \
+AllocStatus CONCAT(FUNC,_push_back)(VEC *this, T entry); \
+AllocStatus CONCAT(FUNC,_extend)(VEC *this, VEC vec);
 
 /* Define dynamic array generic methods for user struct but leave init and
  * destroy to be defined by */
@@ -67,56 +72,58 @@ VEC CONCAT(FUNC,_construct)(size_t capacity) { \
     CONCAT(FUNC,_init)(&vec, capacity); \
     return vec; \
 } \
+AllocStatus CONCAT(FUNC,_init)(VEC *this, size_t capacity) { \
+    CONCAT(FUNC,_nullify)(this); \
+    if (capacity > 0) { \
+        this->data = (T *) calloc(capacity, sizeof(T)); \
+        this->capacity = capacity; \
+        if (this->data == NULL) { \
+            printf("WARNING | Failed to allocate memory for VEC\n"); \
+            return ALLOC_FAILURE; \
+        } \
+    } \
+    return ALLOC_SUCCESS; \
+} \
 void CONCAT(FUNC,_nullify)(VEC *this) { \
     this->data     = NULL; \
     this->capacity = 0; \
     this->size     = 0; \
 } \
-int CONCAT(FUNC,_resize)(VEC *this) { \
+AllocStatus CONCAT(FUNC,_resize)(VEC *this) { \
     size_t capacity = (size_t) ceil_power_of_2(this->capacity); \
     T * new_data = realloc(this->data, capacity * sizeof(T)); \
     if (new_data == NULL) { \
         printf("WARNING | Failed to reallocate memory for VEC\n"); \
-        return EXIT_FAILURE; \
+        return ALLOC_FAILURE; \
     } \
     this->data = new_data; \
     this->capacity = capacity; \
-    return EXIT_SUCCESS; \
+    return ALLOC_SUCCESS; \
 } \
-int CONCAT(FUNC,_push_back)(VEC *this, T entry) { \
+AllocStatus CONCAT(FUNC,_push_back)(VEC *this, T entry) { \
     if (this->size == this->capacity) { \
         int status = CONCAT(FUNC,_resize)(this); \
-        if (status == EXIT_FAILURE) { \
-            return EXIT_FAILURE; \
+        if (status == ALLOC_FAILURE) { \
+            return ALLOC_FAILURE; \
         } \
     } \
     this->data[this->size] = entry; \
     this->size += 1; \
-    return EXIT_SUCCESS; \
+    return ALLOC_SUCCESS; \
 } \
-int CONCAT(FUNC,_extend)(VEC *this, VEC vec) { \
+AllocStatus CONCAT(FUNC,_extend)(VEC *this, VEC vec) { \
     for (size_t i = 0; i < vec.size; i++) { \
         int status = CONCAT(FUNC,_push_back)(this, vec.data[i]); \
-        if (status == EXIT_FAILURE) { \
-            return EXIT_FAILURE; \
+        if (status == ALLOC_FAILURE) { \
+            return ALLOC_FAILURE; \
         } \
     } \
-    return EXIT_SUCCESS; \
+    return ALLOC_SUCCESS; \
 }
 
 
 #define DEFINE_VECTOR(T, VEC, FUNC) \
 _DEFINE_VECTOR_GENERIC(T, VEC, FUNC) \
-void CONCAT(FUNC,_init)(VEC *this, size_t capacity) { \
-    CONCAT(FUNC,_nullify)(this); \
-    if (capacity > 0) { \
-        this->data = (T *) calloc(capacity, sizeof(T)); \
-        if (this->data == NULL) { \
-            printf("WARNING | Failed to allocate memory for VEC\n"); \
-        } \
-        this->capacity = capacity; \
-    } \
-} \
 void CONCAT(FUNC,_destroy)(VEC *this) { \
     free(this->data); \
     CONCAT(FUNC,_nullify)(this); \
@@ -126,7 +133,9 @@ void CONCAT(FUNC,_clear)(VEC *this) { \
     this->size     = 0; \
 }
 
-// TODO #define DEFINE_VECTOR_USERTYPE(T, T_FUNC, VEC, VEC_FUNC) \
+#define DEFINE_VECTOR_USERTYPE(T, T_FUNC, VEC, VEC_FUNC) \
+_DEFINE_VECTOR_GENERIC(T, VEC, VEC_FUNC)
+/* user must define destroy and clear */
 
 ////////////////////////////////////////////////////////////////////////////////
 typedef struct {
@@ -150,17 +159,28 @@ typedef struct {
     pair_int_t first;
     vector_int_t second;
 } pair_pair_int_and_vector_int_t;
-DECLARE_VECTOR(pair_pair_int_and_vector_int_t, vector_pair_pair_int_and_vector_int_t, vector_pair_pair_int_and_vector_int)
+void pair_pair_int_and_vector_int_destroy(pair_pair_int_and_vector_int_t *this) {
+    vector_int_destroy(&this->second);
+}
 
-// TODO: Fix memory leak in default vector that frees data memory without calling
-// destroy on each vector entry
-/* DEFINE_VECTOR_USERTYPE( */
-/*     pair_pair_int_and_vector_int_t, */
-/*     pair_pair_int_and_vector_int, */
-/*     vector_pair_pair_int_and_vector_int_t, */
-/*     pair_pair_int_and_vector_int */
-/* ) */
-DEFINE_VECTOR(pair_pair_int_and_vector_int_t, vector_pair_pair_int_and_vector_int_t, vector_pair_pair_int_and_vector_int)
+DECLARE_VECTOR(
+    pair_pair_int_and_vector_int_t,
+    vector_pair_pair_int_and_vector_int_t,
+    vector_pair_pair_int_and_vector_int
+)
+DEFINE_VECTOR_USERTYPE(
+    pair_pair_int_and_vector_int_t,
+    pair_pair_int_and_vector_int,
+    vector_pair_pair_int_and_vector_int_t,
+    vector_pair_pair_int_and_vector_int
+)
+void vector_pair_pair_int_and_vector_int_destroy(vector_pair_pair_int_and_vector_int_t *this) {
+    for (size_t i = 0; i < this->size; i++) {
+        pair_pair_int_and_vector_int_destroy(&this->data[i]);
+    }
+    free(this->data);
+    vector_pair_pair_int_and_vector_int_nullify(this);
+}
 
 int vector_int_sum(vector_int_t vec) {
     int sum = 0;
@@ -356,7 +376,7 @@ void update_gear(
         };
         vector_pair_pair_int_and_vector_int_push_back(p_possible_gears, new_gear);
         p_possible_gear = &p_possible_gears->data[p_possible_gears->size-1];
-    } 
+    }
     vector_int_t *gear_nums = &p_possible_gear->second;
     vector_int_push_back(gear_nums, num);
 }
@@ -454,8 +474,6 @@ int main(int argc, char *argv[]) {
     vector_char_destroy(&prev);
     vector_char_destroy(&curr);
     vector_char_destroy(&next);
-
-    system("leaks day3");
 
     return EXIT_SUCCESS;
 }
