@@ -1,3 +1,5 @@
+#include "my_utils.h"
+
 #include <stdio.h> // FILE, fopen, getline, fclose
 #include <stdbool.h> // bool, true, false
 #include <stdlib.h> // calloc, free, EXIT_SUCCESS, EXIT_FAILURE
@@ -8,135 +10,6 @@
 
 // TODO: Update to using pointers where there is unecessary copying
 
-// TODO: Function overloading in C
-#define FREE(x) do {free(x); (x) = NULL;} while (0)
-#define UNUSED_PARAMETER(x) ((void)(x))
-
-// TODO: How to inline (getting linker errors)
-////////////////////////////////////////////////////////////////////////////////
-// Utility functions
-int sign(int n) {
-    return (n > 0) - (n < 0);
-}
-/* Round up (away from zero) to nearest power of 2, preserving sign */
-int ceil_power_of_2(int n) {
-    if (n == 0) {
-        return 2;
-    }
-    return pow(2, floor(log2(abs(n)))+1) * sign(n);
-}
-/* Get number of digits in decimal representation of integer */
-int n_digits(int n) {
-    if (n == 0 || n == 1) {
-        return 1;
-    }
-    return (int) ceil(log10(abs(n))) + (n<0);
-}
-////////////////////////////////////////////////////////////////////////////////
-// Utility macros
-#define _STR(x) #x
-#define STR(x) _STR(x)
-#define _CONCAT(x,y) x##y
-#define CONCAT(x,y) _CONCAT(x,y)
-
-// Dynamic array
-// TODO: Handle arrays of objects that need to be destroyed
-// TODO: Handle failures to allocate or reallocate memory
-typedef enum {
-    ALLOC_SUCCESS,
-    ALLOC_FAILURE,
-} AllocStatus;
-
-#define DECLARE_VECTOR(T, VEC, FUNC) \
-typedef struct { \
-    T *data; \
-    size_t size; \
-    size_t capacity; \
-} VEC; \
-VEC  CONCAT(FUNC,_construct)(size_t capacity); \
-void CONCAT(FUNC,_destroy)(VEC *this); \
-/* Clear vector while retaining reference to data array */ \
-void CONCAT(FUNC,_clear)(VEC *this); \
-/* Reset vector, setting array pointer to NULL */ \
-void CONCAT(FUNC,_nullify)(VEC *this); \
-AllocStatus CONCAT(FUNC,_init)(VEC *this, size_t capacity); \
-AllocStatus CONCAT(FUNC,_resize)(VEC *this); \
-AllocStatus CONCAT(FUNC,_push_back)(VEC *this, T entry); \
-AllocStatus CONCAT(FUNC,_extend)(VEC *this, VEC vec);
-
-/* Define dynamic array generic methods for user struct but leave init and
- * destroy to be defined by */
-#define _DEFINE_VECTOR_GENERIC(T, VEC, FUNC) \
-VEC CONCAT(FUNC,_construct)(size_t capacity) { \
-    VEC vec; \
-    CONCAT(FUNC,_init)(&vec, capacity); \
-    return vec; \
-} \
-AllocStatus CONCAT(FUNC,_init)(VEC *this, size_t capacity) { \
-    CONCAT(FUNC,_nullify)(this); \
-    if (capacity > 0) { \
-        this->data = (T *) calloc(capacity, sizeof(T)); \
-        this->capacity = capacity; \
-        if (this->data == NULL) { \
-            printf("WARNING | Failed to allocate memory for VEC\n"); \
-            return ALLOC_FAILURE; \
-        } \
-    } \
-    return ALLOC_SUCCESS; \
-} \
-void CONCAT(FUNC,_nullify)(VEC *this) { \
-    this->data     = NULL; \
-    this->capacity = 0; \
-    this->size     = 0; \
-} \
-AllocStatus CONCAT(FUNC,_resize)(VEC *this) { \
-    size_t capacity = (size_t) ceil_power_of_2(this->capacity); \
-    T * new_data = realloc(this->data, capacity * sizeof(T)); \
-    if (new_data == NULL) { \
-        printf("WARNING | Failed to reallocate memory for VEC\n"); \
-        return ALLOC_FAILURE; \
-    } \
-    this->data = new_data; \
-    this->capacity = capacity; \
-    return ALLOC_SUCCESS; \
-} \
-AllocStatus CONCAT(FUNC,_push_back)(VEC *this, T entry) { \
-    if (this->size == this->capacity) { \
-        int status = CONCAT(FUNC,_resize)(this); \
-        if (status == ALLOC_FAILURE) { \
-            return ALLOC_FAILURE; \
-        } \
-    } \
-    this->data[this->size] = entry; \
-    this->size += 1; \
-    return ALLOC_SUCCESS; \
-} \
-AllocStatus CONCAT(FUNC,_extend)(VEC *this, VEC vec) { \
-    for (size_t i = 0; i < vec.size; i++) { \
-        int status = CONCAT(FUNC,_push_back)(this, vec.data[i]); \
-        if (status == ALLOC_FAILURE) { \
-            return ALLOC_FAILURE; \
-        } \
-    } \
-    return ALLOC_SUCCESS; \
-}
-
-
-#define DEFINE_VECTOR(T, VEC, FUNC) \
-_DEFINE_VECTOR_GENERIC(T, VEC, FUNC) \
-void CONCAT(FUNC,_destroy)(VEC *this) { \
-    free(this->data); \
-    CONCAT(FUNC,_nullify)(this); \
-} \
-void CONCAT(FUNC,_clear)(VEC *this) { \
-    this->data     = memset(this->data, 0, this->size * sizeof(T)); \
-    this->size     = 0; \
-}
-
-#define DEFINE_VECTOR_USERTYPE(T, T_FUNC, VEC, VEC_FUNC) \
-_DEFINE_VECTOR_GENERIC(T, VEC, VEC_FUNC)
-/* user must define destroy and clear */
-
 ////////////////////////////////////////////////////////////////////////////////
 typedef struct {
     int i;
@@ -146,40 +19,38 @@ typedef struct {
 typedef struct {
     int first;
     int second;
-} pair_int_t;
+} pair_int_int_t;
 
-DECLARE_VECTOR(char, vector_char_t, vector_char)
-DEFINE_VECTOR(char, vector_char_t, vector_char)
-DECLARE_VECTOR(int, vector_int_t, vector_int)
-DEFINE_VECTOR(int, vector_int_t, vector_int)
 DECLARE_VECTOR(point2d_char_t, vector_point2d_char_t, vector_point2d_char)
 DEFINE_VECTOR(point2d_char_t, vector_point2d_char_t, vector_point2d_char)
 
 typedef struct {
-    pair_int_t first;
+    pair_int_int_t first;
     vector_int_t second;
-} pair_pair_int_and_vector_int_t;
-void pair_pair_int_and_vector_int_destroy(pair_pair_int_and_vector_int_t *this) {
+} pair_pair_int_int_vector_int_t;
+void pair_pair_int_int_vector_int_destroy(pair_pair_int_int_vector_int_t *this) {
     vector_int_destroy(&this->second);
 }
 
 DECLARE_VECTOR(
-    pair_pair_int_and_vector_int_t,
-    vector_pair_pair_int_and_vector_int_t,
-    vector_pair_pair_int_and_vector_int
+    pair_pair_int_int_vector_int_t,
+    vector_pair_pair_int_int_vector_int_t,
+    vector_pair_pair_int_int_vector_int
 )
 DEFINE_VECTOR_USERTYPE(
-    pair_pair_int_and_vector_int_t,
-    pair_pair_int_and_vector_int,
-    vector_pair_pair_int_and_vector_int_t,
-    vector_pair_pair_int_and_vector_int
+    pair_pair_int_int_vector_int_t,
+    pair_pair_int_int_vector_int,
+    vector_pair_pair_int_int_vector_int_t,
+    vector_pair_pair_int_int_vector_int
 )
-void vector_pair_pair_int_and_vector_int_destroy(vector_pair_pair_int_and_vector_int_t *this) {
+void vector_pair_pair_int_int_vector_int_destroy(
+    vector_pair_pair_int_int_vector_int_t *this
+) {
     for (size_t i = 0; i < this->size; i++) {
-        pair_pair_int_and_vector_int_destroy(&this->data[i]);
+        pair_pair_int_int_vector_int_destroy(&this->data[i]);
     }
     free(this->data);
-    vector_pair_pair_int_and_vector_int_nullify(this);
+    vector_pair_pair_int_int_vector_int_nullify(this);
 }
 
 int vector_int_sum(vector_int_t vec) {
@@ -219,6 +90,13 @@ vector_char_t vector_int_to_str(vector_int_t vec) {
 // Day 3 supporting functions
 bool is_symbol(char c) {
     return (c != '.') && (!isdigit(c));
+}
+/* Get number of digits in decimal representation of integer */
+int n_digits(int n) {
+    if (n == 0 || n == 1) {
+        return 1;
+    }
+    return (int) ceil(log10(abs(n))) + (n<0);
 }
 char * getnum(int *num, char *str) {
     int n_digits = 0;
@@ -349,12 +227,12 @@ vector_point2d_char_t get_border(
     return border;
 }
 
-pair_pair_int_and_vector_int_t * find_gear(
-    vector_pair_pair_int_and_vector_int_t gears,
-    pair_int_t coord
+pair_pair_int_int_vector_int_t * find_gear(
+    vector_pair_pair_int_int_vector_int_t gears,
+    pair_int_int_t coord
 ) {
     for (size_t i = 0; i < gears.size; i++) {
-        pair_int_t gear_coord = gears.data[i].first;
+        pair_int_int_t gear_coord = gears.data[i].first;
         if (coord.first == gear_coord.first && coord.second == gear_coord.second) {
             return &gears.data[i];
         }
@@ -363,18 +241,18 @@ pair_pair_int_and_vector_int_t * find_gear(
 }
 
 void update_gear(
-    vector_pair_pair_int_and_vector_int_t *p_possible_gears,
-    pair_int_t coords,
+    vector_pair_pair_int_int_vector_int_t *p_possible_gears,
+    pair_int_int_t coords,
     int num
 ) {
-    pair_pair_int_and_vector_int_t *p_possible_gear = \
+    pair_pair_int_int_vector_int_t *p_possible_gear = \
         find_gear(*p_possible_gears, coords);
     if (p_possible_gear == NULL) {
-        pair_pair_int_and_vector_int_t new_gear = {
+        pair_pair_int_int_vector_int_t new_gear = {
             .first = coords,
             .second = vector_int_construct(2),
         };
-        vector_pair_pair_int_and_vector_int_push_back(p_possible_gears, new_gear);
+        vector_pair_pair_int_int_vector_int_push_back(p_possible_gears, new_gear);
         p_possible_gear = &p_possible_gears->data[p_possible_gears->size-1];
     }
     vector_int_t *gear_nums = &p_possible_gear->second;
@@ -395,7 +273,7 @@ int main(int argc, char *argv[]) {
 
     // Computations
     vector_int_t part_numbers = vector_int_construct(2);
-    vector_pair_pair_int_and_vector_int_t possible_gears = vector_pair_pair_int_and_vector_int_construct(2);
+    vector_pair_pair_int_int_vector_int_t possible_gears = vector_pair_pair_int_int_vector_int_construct(2);
     vector_char_t prev = vector_char_construct(0);
     vector_char_t curr = vector_char_construct(0);
     vector_char_t next = vector_char_construct(0);
@@ -423,7 +301,7 @@ int main(int argc, char *argv[]) {
                 }
                 symbol_found = true;
                 if (pnt.val == '*') {
-                    pair_int_t coords = {
+                    pair_int_int_t coords = {
                         .first  = pnt.i + row_idx,
                         .second = pnt.j
                     };
@@ -447,12 +325,12 @@ int main(int argc, char *argv[]) {
     // Compute gear ratio sum for part 2
     int gear_ratio_sum = 0;
     for (size_t i = 0; i < possible_gears.size; i++) {
-        pair_pair_int_and_vector_int_t possible_gear = possible_gears.data[i];
+        pair_pair_int_int_vector_int_t possible_gear = possible_gears.data[i];
         vector_int_t gear_nums = possible_gear.second;
         if (gear_nums.size != 2) {
             continue;
         }
-        pair_int_t gear_coord = possible_gear.first;
+        pair_int_int_t gear_coord = possible_gear.first;
         int gear_ratio = gear_nums.data[0] * gear_nums.data[1];
         printf("INFO | Gear [R%i,C%i] : [%i, %i] -> %i\n",
             gear_coord.first,
@@ -470,7 +348,7 @@ int main(int argc, char *argv[]) {
     // Tear down
     fclose(fp);
     vector_int_destroy(&part_numbers);
-    vector_pair_pair_int_and_vector_int_destroy(&possible_gears);
+    vector_pair_pair_int_int_vector_int_destroy(&possible_gears);
     vector_char_destroy(&prev);
     vector_char_destroy(&curr);
     vector_char_destroy(&next);
