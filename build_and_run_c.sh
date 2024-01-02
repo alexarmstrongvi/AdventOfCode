@@ -24,19 +24,17 @@ ops="$ops -Wno-unused-comparison"
 ops="$ops -Wno-unused-value"
 ops="$ops -Wno-unused-variable"
 ops="$ops -std=c17"
-# ops="$ops -stdlib=libc"
 ops="$ops -g" # generate debug info
 ops="$ops -I ${AOC_PATH}/include"
 ops="$ops -o build/${exe}"
 # ops="$ops -Ofast"
-clang $ops "$file" "${AOC_PATH}"/utils/*.c
+clang $ops "${AOC_PATH}"/utils/*.c "$file" 
 exe_args="${@:2}"
 
 if [ $? -eq 0 ]; then
     printf "Running ./build/${exe}\n"
     printf "====== stdout/stderr ======\n"
     chmod +x "./build/${exe}"
-    # NOTE: First call to a new executable is slower than subsequent calls
     ./build/${exe} ${exe_args}
 else
     printf "\n====== FAILED ======\n"

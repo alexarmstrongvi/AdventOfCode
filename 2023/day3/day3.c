@@ -1,28 +1,29 @@
+// Local
 #include "my_utils.h"
 
+// Standard library
 #include <stdio.h> // FILE, fopen, getline, fclose
 #include <stdbool.h> // bool, true, false
-#include <stdlib.h> // calloc, free, EXIT_SUCCESS, EXIT_FAILURE
+#include <stdlib.h> // EXIT_SUCCESS, EXIT_FAILURE
 #include <ctype.h> // isdigit
 #include <math.h> // ceil, log10
-#include <limits.h> // INT_MAX
 #include <string.h>
 
-// TODO: Update to using pointers where there is unecessary copying
-
 ////////////////////////////////////////////////////////////////////////////////
+// Day 3 data types
 typedef struct {
     int i;
     int j;
     char val;
 } point2d_char_t;
+
+DECLARE_VECTOR(point2d_char_t, vector_point2d_char_t, vector_point2d_char)
+DEFINE_VECTOR(point2d_char_t, vector_point2d_char_t, vector_point2d_char)
+
 typedef struct {
     int first;
     int second;
 } pair_int_int_t;
-
-DECLARE_VECTOR(point2d_char_t, vector_point2d_char_t, vector_point2d_char)
-DEFINE_VECTOR(point2d_char_t, vector_point2d_char_t, vector_point2d_char)
 
 typedef struct {
     pair_int_int_t first;
@@ -49,41 +50,8 @@ void vector_pair_pair_int_int_vector_int_destroy(
     for (size_t i = 0; i < this->size; i++) {
         pair_pair_int_int_vector_int_destroy(&this->data[i]);
     }
-    free(this->data);
+    FREE(this->data);
     vector_pair_pair_int_int_vector_int_nullify(this);
-}
-
-int vector_int_sum(vector_int_t vec) {
-    int sum = 0;
-    for (size_t i = 0; i < vec.size; i++) {
-        sum += vec.data[i];
-    }
-    return sum;
-}
-
-enum {
-    MAX_INT_CHARS = 1+10+1 // "-" + "2147483648" + "\0"
-};
-vector_char_t vector_int_to_str(vector_int_t vec) {
-    size_t capacity = vec.size > 0 ? vec.size * 3 - 1 : 3;
-    vector_char_t str = vector_char_construct(capacity);
-    vector_char_push_back(&str, '[');
-    for (size_t i = 0; i < vec.size; i++) {
-        char int_str[MAX_INT_CHARS];
-        sprintf(int_str, "%i", vec.data[i]);
-
-        char *p = int_str;
-        for (char c = *p; c != '\0'; c = *++p) {
-            vector_char_push_back(&str, c);
-        }
-
-        if (i < vec.size -1) {
-            vector_char_push_back(&str, ',');
-            vector_char_push_back(&str, ' ');
-        }
-    }
-    vector_char_push_back(&str, ']');
-    return str;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -159,27 +127,27 @@ ssize_t getline_laglead(
     return p_curr->size;
 }
 
-vector_point2d_char_t get_border(
-    vector_char_t curr,
+vector_point2d_char_t * get_border(
+    const vector_char_t *curr,
     size_t start,
     size_t end,
-    vector_char_t prev,
-    vector_char_t next
+    const vector_char_t *prev,
+    const vector_char_t *next
 ) {
     size_t capacity = (end-start) * 2 + 2;
-    vector_point2d_char_t border = vector_point2d_char_construct(capacity);
+    vector_point2d_char_t *border = vector_point2d_char_new(capacity);
 
-    bool at_top    = prev.size == 0;
+    bool at_top    = prev->size == 0;
     bool at_left   = start == 0;
-    bool at_right  = end == curr.size;
-    bool at_bottom = next.size == 0;
+    bool at_right  = end == curr->size;
+    bool at_bottom = next->size == 0;
     /* printf("DEBUG | [L,B,T,R] = [%i,%i,%i,%i]\n", at_left, at_bottom, at_top, at_right); */
 
     if (!at_left) {
         start -= 1;
     }
     if (at_right) {
-        end = curr.size-1;
+        end = curr->size-1;
     }
 
     char c = '\0';
@@ -189,9 +157,9 @@ vector_point2d_char_t get_border(
             point2d_char_t pnt = {
                 .i   = -1,
                 .j   = j,
-                .val = prev.data[j]
+                .val = prev->data[j]
             };
-            vector_point2d_char_push_back(&border, pnt);
+            vector_point2d_char_push_back(border, pnt);
         }
     }
 
@@ -200,17 +168,17 @@ vector_point2d_char_t get_border(
         point2d_char_t pnt = {
             .i   = 0,
             .j   = start,
-            .val = curr.data[start]
+            .val = curr->data[start]
         };
-        vector_point2d_char_push_back(&border, pnt);
+        vector_point2d_char_push_back(border, pnt);
     }
     if (!at_right) {
         point2d_char_t pnt = {
             .i   = 0,
             .j   = end,
-            .val = curr.data[end]
+            .val = curr->data[end]
         };
-        vector_point2d_char_push_back(&border, pnt);
+        vector_point2d_char_push_back(border, pnt);
     }
 
     // Process next row
@@ -219,9 +187,9 @@ vector_point2d_char_t get_border(
             point2d_char_t pnt = {
                 .i   = 1,
                 .j   = j,
-                .val = next.data[j]
+                .val = next->data[j]
             };
-            vector_point2d_char_push_back(&border, pnt);
+            vector_point2d_char_push_back(border, pnt);
         }
     }
     return border;
@@ -272,29 +240,29 @@ int main(int argc, char *argv[]) {
     }
 
     // Computations
-    vector_int_t part_numbers = vector_int_construct(2);
-    vector_pair_pair_int_int_vector_int_t possible_gears = vector_pair_pair_int_int_vector_int_construct(2);
-    vector_char_t prev = vector_char_construct(0);
-    vector_char_t curr = vector_char_construct(0);
-    vector_char_t next = vector_char_construct(0);
+    vector_int_t *part_numbers = vector_int_new(2);
+    vector_pair_pair_int_int_vector_int_t *possible_gears = vector_pair_pair_int_int_vector_int_new(2);
+    vector_char_t *prev = vector_char_new(0);
+    vector_char_t *curr = vector_char_new(0);
+    vector_char_t *next = vector_char_new(0);
+    vector_int_t *curr_part_numbers = vector_int_new(2);
     int row_idx = -1;
-    while (getline_laglead(&curr, &prev, &next, fp) != EOF) {
+    while (getline_laglead(curr, prev, next, fp) != EOF) {
         row_idx++;
         /* printf("DEBUG | \n"); */
-        /* printf("DEBUG |     %s\n",    prev.data != NULL ? prev.data : "\n"); */
-        /* printf("DEBUG | R%i) %s\n", row_idx, curr.data != NULL ? curr.data  : "\n"); */
-        /* printf("DEBUG |     %s\n",    next.data != NULL ? next.data : "\n"); */
-        vector_int_t curr_part_numbers = vector_int_construct(2);
+        /* printf("DEBUG |     %s\n",    prev->data != NULL ? prev->data : "\n"); */
+        /* printf("DEBUG | R%i) %s\n", row_idx, curr->data != NULL ? curr->data  : "\n"); */
+        /* printf("DEBUG |     %s\n",    next->data != NULL ? next->data : "\n"); */
         int num = 0;
-        char* p_head = curr.data;
+        char* p_head = curr->data;
         while ((p_head = getnum(&num, p_head)) != NULL) {
-            size_t end = p_head - curr.data;
+            size_t end = p_head - curr->data;
             size_t start = end - n_digits(num);
             /* printf("DEBUG | Parsed number: curr[%zu:%zu]=%i\n", start,end,num); */
             bool symbol_found = false;
-            vector_point2d_char_t border = get_border(curr, start, end, prev, next);
-            for (size_t i = 0; i < border.size; i++) {
-                point2d_char_t pnt = border.data[i];
+            vector_point2d_char_t *border = get_border(curr, start, end, prev, next);
+            for (size_t i = 0; i < border->size; i++) {
+                point2d_char_t pnt = border->data[i];
                 /* printf("DEBUG | border R%i C%i = %c\n", row_idx + pnt.i, pnt.j, pnt.val); */
                 if (!is_symbol(pnt.val)) {
                     continue;
@@ -305,27 +273,28 @@ int main(int argc, char *argv[]) {
                         .first  = pnt.i + row_idx,
                         .second = pnt.j
                     };
-                    update_gear(&possible_gears, coords, num);
+                    update_gear(possible_gears, coords, num);
                 }
             }
-            vector_point2d_char_destroy(&border);
+            vector_point2d_char_destroy(border);
 
             if (symbol_found) {
-                vector_int_push_back(&curr_part_numbers, num);
+                vector_int_push_back(curr_part_numbers, num);
             }
         }
-        vector_char_t print_str = vector_int_to_str(curr_part_numbers);
-        printf("INFO | R%d part #s: %s\n", row_idx, print_str.data);
-        vector_char_destroy(&print_str);
+        vector_char_t *print_str = vector_int_to_str(curr_part_numbers);
+        printf("INFO | R%d part #s: %s\n", row_idx, print_str->data);
+        vector_char_destroy(print_str);
 
-        vector_int_extend(&part_numbers, curr_part_numbers);
-        vector_int_destroy(&curr_part_numbers);
+        vector_int_extend(part_numbers, curr_part_numbers);
+        vector_int_clear(curr_part_numbers);
     }
+    vector_int_destroy(curr_part_numbers);
 
     // Compute gear ratio sum for part 2
     int gear_ratio_sum = 0;
-    for (size_t i = 0; i < possible_gears.size; i++) {
-        pair_pair_int_int_vector_int_t possible_gear = possible_gears.data[i];
+    for (size_t i = 0; i < possible_gears->size; i++) {
+        pair_pair_int_int_vector_int_t possible_gear = possible_gears->data[i];
         vector_int_t gear_nums = possible_gear.second;
         if (gear_nums.size != 2) {
             continue;
@@ -347,11 +316,11 @@ int main(int argc, char *argv[]) {
 
     // Tear down
     fclose(fp);
-    vector_int_destroy(&part_numbers);
-    vector_pair_pair_int_int_vector_int_destroy(&possible_gears);
-    vector_char_destroy(&prev);
-    vector_char_destroy(&curr);
-    vector_char_destroy(&next);
+    vector_int_destroy(part_numbers);
+    vector_pair_pair_int_int_vector_int_destroy(possible_gears);
+    vector_char_destroy(prev);
+    vector_char_destroy(curr);
+    vector_char_destroy(next);
 
     return EXIT_SUCCESS;
 }

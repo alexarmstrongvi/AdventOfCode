@@ -10,5 +10,5 @@ INFO | R8 part #s: []
 INFO | R9 part #s: [664, 598]
 INFO | Gear [R1,C3] : [467, 35] -> 16345
 INFO | Gear [R8,C5] : [755, 598] -> 451490
-Part 1 solution: 4419
-Part 2 solution: 467835
+INFO | Part 1 solution: 4419
+INFO | Part 2 solution: 467835
