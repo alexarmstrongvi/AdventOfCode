@@ -30,7 +30,9 @@ typedef struct { \
 } VEC; \
 VEC * CONCAT(FUNC,_new)(size_t capacity); \
 VEC CONCAT(FUNC,_construct)(size_t capacity); \
+void CONCAT(FUNC,_free)(VEC **this); \
 void CONCAT(FUNC,_destroy)(VEC *this); \
+void CONCAT(FUNC,_destroy_elements)(VEC *this); \
 /* Clear vector while retaining reference to data array */ \
 void CONCAT(FUNC,_clear)(VEC *this); \
 /* Reset vector, setting array pointer to NULL */ \
@@ -74,6 +76,20 @@ void CONCAT(FUNC,_nullify)(VEC *this) { \
     this->capacity = 0; \
     this->size     = 0; \
 } \
+void CONCAT(FUNC,_free)(VEC **this) { \
+    CONCAT(FUNC,_destroy)(*this); \
+    FREE(*this); \
+} \
+void CONCAT(FUNC,_destroy)(VEC *this) { \
+    CONCAT(FUNC,_destroy_elements)(this); \
+    FREE(this->data); \
+    CONCAT(FUNC,_nullify)(this); \
+} \
+void CONCAT(FUNC,_clear)(VEC *this) { \
+    CONCAT(FUNC,_destroy_elements)(this); \
+    this->data = memset(this->data, 0, this->size * sizeof(T)); \
+    this->size = 0; \
+} \
 AllocStatus CONCAT(FUNC,_resize)(VEC *this) { \
     size_t capacity = (size_t) ceil_power_of_2(this->capacity); \
     T * new_data = realloc(this->data, capacity * sizeof(T)); \
@@ -109,23 +125,22 @@ AllocStatus CONCAT(FUNC,_extend)(VEC *this, const VEC *vec) { \
 
 #define DEFINE_VECTOR(T, VEC, FUNC) \
 _DEFINE_VECTOR_GENERIC(T, VEC, FUNC) \
-void CONCAT(FUNC,_destroy)(VEC *this) { \
-    FREE(this->data); \
-    CONCAT(FUNC,_nullify)(this); \
-} \
-void CONCAT(FUNC,_clear)(VEC *this) { \
-    this->data = memset(this->data, 0, this->size * sizeof(T)); \
-    this->size = 0; \
+void CONCAT(FUNC,_destroy_elements)(VEC *this) { \
+    UNUSED_PARAMETER(this); \
 }
 
-#define DEFINE_VECTOR_USERTYPE(T, T_FUNC, VEC, VEC_FUNC) \
-_DEFINE_VECTOR_GENERIC(T, VEC, VEC_FUNC)
-/* user must define destroy and clear */
+#define DEFINE_VECTOR_USERTYPE(T, T_FUNC, VEC, FUNC) \
+_DEFINE_VECTOR_GENERIC(T, VEC, FUNC) \
+void CONCAT(FUNC,_destroy_elements)(VEC *this) { \
+    for (size_t i = 0; i < this->size; i++) { \
+        CONCAT(T_FUNC,_destroy)(&this->data[i]); \
+    } \
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 DECLARE_VECTOR(char, vector_char_t, vector_char)
-DECLARE_VECTOR(int, vector_int_t, vector_int)
 
+DECLARE_VECTOR(int, vector_int_t, vector_int)
 int vector_int_sum(const vector_int_t *vec);
 vector_char_t * vector_int_to_str(const vector_int_t *vec);
 
