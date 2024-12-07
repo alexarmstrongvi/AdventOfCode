@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # Standard library
-from collections.abc import Sequence
 import itertools
 import logging
+from collections.abc import Sequence
 
 # 1st party
 import aoc_utils as aoc

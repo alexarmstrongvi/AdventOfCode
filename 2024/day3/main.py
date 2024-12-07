@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # Standard library
-from collections.abc import Sequence
-from typing import Literal
-import itertools
 import logging
 import re
+import time
 
 # 1st party
 import aoc_utils as aoc
@@ -17,9 +15,18 @@ def main() -> None:
     args = aoc.parse_args()
     aoc.configure_logging(args.log_level)
     text = aoc.read_input(args.input)
-    log.debug('%d chars read in', len(text))
 
     # Solution
+
+    # Part 1
+    start = time.perf_counter()
+    regex = re.compile(r"mul\((\d{1,3}),(\d{1,3})\)")
+    total = sum(int(x)*int(y) for x,y in regex.findall(text))
+    elapsed = time.perf_counter() - start
+    print(f'Part 1: {total} [t={elapsed*1000:.3f}ms]')
+
+    # Part 2
+    start = time.perf_counter()
     regex = re.compile(r"""
         (?:
              mul\((\d{1,3}),(\d{1,3})\)
@@ -27,8 +34,8 @@ def main() -> None:
              |(don't\(\))
         )
     """, re.VERBOSE) 
+    total = 0
     is_enabled = True
-    total_pt1 = total_pt2 = 0
     for match in regex.finditer(text):
         x,y,do,dont = match.groups()
         if do:
@@ -37,14 +44,10 @@ def main() -> None:
         elif dont:
             is_enabled = False
             continue
-
-        result = int(x) * int(y)
-        total_pt1 += result
         if is_enabled: 
-            total_pt2 += result
-
-    print('Part 1:', total_pt1)
-    print('Part 2:', total_pt2)
+            total += int(x) * int(y)
+    elapsed = time.perf_counter() - start
+    print(f'Part 2: {total} [t={elapsed*1000:.3f}ms]')
 
 if __name__ == "__main__":
     main()

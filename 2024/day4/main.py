@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # Standard library
 import logging
-from functools import partial
+import time
+from functools import lru_cache, partial
 from itertools import starmap
 
-# 3rd aprty
+# 3rd party
 import numpy as np
 
 # 1st party
@@ -24,27 +25,43 @@ def main() -> None:
     lines = text.splitlines()
     arr = np.array(lines).view('U1').reshape(len(lines), -1)
 
-    # Option 1: Procedural
-    # n_xmas = n_x_mas = 0
-    # for (i,j), c in np.ndenumerate(arr):
-    #     if c == 'X':
-    #         n_xmas += count_xmas(arr, i, j)
-    #     if c == 'A':
-    #         n_x_mas += is_x_mas(arr, i, j)
-
-    # Option 2: Functional
+    # Part 1
+    start = time.perf_counter()
     n_xmas  = sum(starmap(partial(count_xmas, arr), zip(*np.where(arr=='X'))))
-    n_x_mas = sum(starmap(partial(is_x_mas, arr),   zip(*np.where(arr=='A'))))
+    elapsed = time.perf_counter() - start
+    print(f'Part 1: {n_xmas} [t={elapsed*1000:.3f}ms]')
 
-    print('Part 1:', n_xmas)
-    print('Part 2:', n_x_mas)
+    # Part 2
+    start = time.perf_counter()
+    n_x_mas = sum(starmap(partial(is_x_mas, arr),   zip(*np.where(arr=='A'))))
+    elapsed = time.perf_counter() - start
+    print(f'Part 2: {n_x_mas} [t={elapsed*1000:.3f}ms]')
+
+   ########################################
+   # Alternate solution
+   ########################################
+   # Part 1 & 2: Procedural with single iteration
+   # - No noticable speed improvement
+    start = time.perf_counter()
+    n_xmas_ = n_x_mas_ = 0
+    for (i,j), c in np.ndenumerate(arr):
+        if c == 'X':
+            n_xmas_ += count_xmas(arr, i, j)
+        if c == 'A':
+            n_x_mas_ += is_x_mas(arr, i, j)
+    elapsed = time.perf_counter() - start
+    assert n_xmas_ == n_xmas
+    asprintsert n_x_mas_ == n_x_mas
+    print(f'Part 1 & 2: [t={elapsed*1000:.3f}ms]')
 
 ################################################################################
 def count_xmas(arr, i,j) -> int:
-    return count_matches(arr, i, j, XMAS_COORDS_REL, 'XMAS')
+    rel_coords = generate_8compass_coords(len('XMAS'))
+    return count_matches(arr, i, j, rel_coords, 'XMAS')
 
 def is_x_mas(arr, i,j) -> int:
-    count = count_matches(arr, i, j, X_MAS_COORDS_REL, 'MAS')
+    rel_coords = generate_x_coords(len('MAS'))
+    count = count_matches(arr, i, j, rel_coords, 'MAS')
     return count == 2
 
 def count_matches(arr, i, j, rel_coords, s) -> int:
@@ -68,6 +85,7 @@ def drop_out_of_bound_idxs(i_idxs, j_idxs, m, n) -> tuple[np.ndarray, np.ndarray
     )
     return i_idxs[in_bounds], j_idxs[in_bounds]
 
+@lru_cache(maxsize=1)
 def generate_x_coords(size):
     assert size%2==1
     # i_idxs = [
@@ -81,6 +99,7 @@ def generate_x_coords(size):
     j_coords = np.roll(i_coords, 1, axis=0)
     return np.stack([i_coords, j_coords])
 
+@lru_cache(maxsize=1)
 def generate_8compass_coords(size):
     # i_idxs = [
     #     [0, -1, -2, -3], # Up
@@ -96,9 +115,6 @@ def generate_8compass_coords(size):
     i_coords = a * np.array([-1,-1,0,1,1,1,0,-1]).reshape(-1,1)
     j_coords = np.roll(i_coords, 2, axis=0)
     return np.stack([i_coords, j_coords])
-
-XMAS_COORDS_REL  = generate_8compass_coords(size=len('XMAS'))
-X_MAS_COORDS_REL = generate_x_coords(size=len('MAS'))
 
 if __name__ == "__main__":
     main()

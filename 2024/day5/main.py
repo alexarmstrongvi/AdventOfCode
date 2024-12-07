@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # Standard library
 import logging
-from itertools import takewhile, combinations, filterfalse, pairwise
-from functools import partial, reduce
-from operator import itemgetter
 import time
 from collections import defaultdict
 from collections.abc import Iterable
+from functools import partial, reduce
+from graphlib import CycleError, TopologicalSorter
+from itertools import combinations, filterfalse, pairwise, takewhile
+from operator import itemgetter
 from typing import Callable
-from graphlib import TopologicalSorter, CycleError
 
 # 1st party
 import aoc_utils as aoc
@@ -34,15 +34,15 @@ def main() -> None:
     in_right_order = partial(pages_in_right_order, rules)
     get_mid_item = lambda seq : int(seq[len(seq)//2])
     total_pt1 = sum(map(get_mid_item,filter(in_right_order, nums)))
+    elapsed = time.perf_counter() - start
+    print(f'Part 1: {total_pt1} [t={elapsed*1000:.3f}ms]')
 
     # Part 2
+    start = time.perf_counter()
     sort = partial(sort_pages_naive, rules)
     total_pt2 = sum(map(get_mid_item,map(sort,filterfalse(in_right_order, nums))))
     elapsed = time.perf_counter() - start
-
-    log.info('Elapsed: %.3f ms', elapsed * 1000)
-    print('Part 1:', total_pt1)
-    print('Part 2:', total_pt2)
+    print(f'Part 2: {total_pt2} [t={elapsed*1000:.3f}ms]')
 
     ############################################################################ 
     # Alternate solutions
@@ -53,7 +53,7 @@ def main() -> None:
     assert total_pt1 == sum(map(get_mid_item, ordered))
     assert total_pt2 == sum(map(get_mid_item, map(sort,unordered)))
     elapsed = time.perf_counter() - start
-    log.info('Elapsed (method 2): %.3f ms', elapsed * 1000)
+    print(f'Elapsed (method 2): {elapsed*1000}ms')
 
     # More robust sorting using topological sort
     is_sorted = lambda it : all(x <= y for x,y in pairwise(it))
@@ -73,7 +73,7 @@ def main() -> None:
         assert total_pt1 == sum(map(get_mid_item, ordered))
         assert total_pt2 == sum(map(get_mid_item, map(sort2,unordered)))
         elapsed = time.perf_counter() - start
-        log.info('Elapsed (method 3): %.3f ms', elapsed * 1000)
+        print(f'Elapsed (method 3): {elapsed*1000}ms')
     except CycleError as e:
         cycle = [f'{x}|{y}' for x,y in pairwise(e.args[1])]
         assert len(set(cycle) - rules) == 0
