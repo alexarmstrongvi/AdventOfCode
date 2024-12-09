@@ -3,6 +3,8 @@
 
 // Standard library
 #include <algorithm>
+#include <chrono>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -12,8 +14,10 @@
 #include <vector>
 
 // Aliases
-namespace fs = std::filesystem;
-namespace aoc = aoc_utils;
+namespace fs     = std::filesystem;
+namespace aoc    = aoc_utils;
+using clock_type = std::chrono::high_resolution_clock;
+using time_point = std::chrono::time_point<clock_type>;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Declarations
@@ -21,6 +25,10 @@ std::pair<std::vector<int>, std::vector<int>> read_data(const fs::path &filepath
 
 ////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
+    // Initialize
+    time_point start{};
+    double elapsed{0};
+
     // Get input
     const aoc::InputPathArgs args = aoc::parse_args(argc, argv);
     if (args.help) {
@@ -37,6 +45,9 @@ int main(int argc, char *argv[]) {
     ////////////////////////////////////////
     // Solution
     ////////////////////////////////////////
+
+    // Part 1
+    start = clock_type::now();
     sort(left.begin(), left.end());
     sort(right.begin(), right.end());
 
@@ -47,18 +58,19 @@ int main(int argc, char *argv[]) {
     // }
 
     // Option 2: Functional
-    auto last = args.max_lines ? left.cbegin() + args.max_lines.value() : left.cend();
     int total_diff = std::transform_reduce(
         /* first1    = */ left.cbegin(),
-        /* last1     = */ last,
+        /* last1     = */ left.cend(),
         /* first2    = */ right.cbegin(),
         /* init      = */ 0,
         /* reduce    = */ std::plus<>(),
         /* transform = */ [](int a, int b) { return std::abs(a - b); }
     );
+    elapsed = (clock_type::now() - start).count() / std::pow(10, 6);
+    std::cout << "Part 1: " << total_diff << " [" << elapsed << "ms]" << std::endl;
 
-    std::cout << "Part 1: " << total_diff << std::endl;
-
+    // Part 2
+    start = std::chrono::high_resolution_clock::now();
     const aoc::Counter cnt(right);
 
     // Option 1: Procedural
@@ -74,7 +86,8 @@ int main(int argc, char *argv[]) {
         0,
         [&cnt](int sum, const int x) { return sum + x * cnt[x]; }
     );
-    std::cout << "Part 2: " << score << std::endl;
+    elapsed = (clock_type::now() - start).count() / std::pow(10, 6);
+    std::cout << "Part 2: " << score << " [" << elapsed << "ms]" << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -1,0 +1,6 @@
+CompileFlags:
+  Add: 
+    - '-I../../aoc_utils/cpp/'
+    - '../../aoc_utils/cpp/aoc_utils.cpp'
+    - '-xc++'
+    - '-std=c++20'
