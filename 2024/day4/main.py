@@ -51,7 +51,7 @@ def main() -> None:
             n_x_mas_ += is_x_mas(arr, i, j)
     elapsed = time.perf_counter() - start
     assert n_xmas_ == n_xmas
-    asprintsert n_x_mas_ == n_x_mas
+    assert n_x_mas_ == n_x_mas
     print(f'Part 1 & 2: [t={elapsed*1000:.3f}ms]')
 
 ################################################################################

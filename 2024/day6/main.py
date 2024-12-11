@@ -6,12 +6,14 @@ import time
 
 # 3rd party
 import numpy as np
+from tqdm import tqdm
 
 # 1st party
 import aoc_utils as aoc
 
 # Globals
 log = logging.getLogger('AoC')
+Location = tuple[int, int]
 
 ################################################################################
 def main() -> None:
@@ -36,9 +38,9 @@ def main() -> None:
     # Part 2
     start = time.perf_counter()
     # Only test places the guard will eventually get to
-    obstructions_to_test = positions - {to_tuple(start_pos)}
+    obstructions_to_test = positions - {to_loc(start_pos)}
     obstruction_positions = []
-    for pos in obstructions_to_test:
+    for pos in tqdm(obstructions_to_test):
         is_stuck = test_new_obstruction(pos, map, start_pos, start_step)
         if not is_stuck:
             continue
@@ -55,7 +57,7 @@ def main() -> None:
     ############################################################################
     # Part 2 Multiprocessing (5X improvement using 8-cores)
     start = time.perf_counter()
-    obstructions_to_test = positions - {to_tuple(start_pos)}
+    obstructions_to_test = positions - {to_loc(start_pos)}
     obstruction_positions = []
     n_workers = mp.cpu_count() - 1 # Leave CPU for MainProcess
     with mp.Pool(
@@ -68,24 +70,22 @@ def main() -> None:
             iterable  = obstructions_to_test,
             # chunksize = 10, # No major performance impact
         )
-        for pos, guard_is_stuck in iresults:
+        for pos, guard_is_stuck in tqdm(iresults, total=len(obstructions_to_test)):
             if not guard_is_stuck:
                 continue
             obstruction_positions.append(pos)
-            if len(obstruction_positions) % 100 == 0:
-                log.info('Obstruction %d found: %s', len(obstruction_positions), pos)
 
     elapsed = time.perf_counter() - start
     assert len(obstruction_positions) == n_obstructions
     print(f'Part 2 [mp]: [t={elapsed*1000:.3f}ms]')
 
 ################################################################################
-def predict_guards_route(map, start_pos, start_step):
+def predict_guards_route(map, start_pos, start_step) -> tuple[set[Location], bool]:
     m,n           = map.shape
     is_obstacle   = lambda p : map[p[0],p[1]] == '#'
     outside_area  = lambda p : not (0 <= p[0] < m and 0 <= p[1] < n)
     turn_right    = lambda p : np.array((p[1], -p[0]))
-    to_state      = lambda p,s : (to_tuple(p), to_tuple(s))
+    to_state      = lambda p,s : (to_loc(p), to_loc(s))
     states        = {to_state(start_pos, start_step)}
     stuck_in_loop = lambda p,s : to_state(p,s) in states
 
@@ -149,8 +149,8 @@ def _test_new_obstruction_mp(
         test_new_obstruction(obstruction_pos, _MAP, _START_POS, _START_STEP)
     )
 
-def to_tuple(arr: np.ndarray) -> tuple[int,...]:
-    return tuple(int(x) for x in arr)
+def to_loc(arr: np.ndarray) -> Location:
+    return int(arr[0]), int(arr[1])
 ################################################################################
 if __name__ == "__main__":
     main()

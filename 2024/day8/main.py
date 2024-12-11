@@ -2,8 +2,8 @@
 # Standard library
 import logging
 import time
-from itertools import combinations, count, takewhile
 from functools import reduce
+from itertools import combinations, count 
 
 # 3rd party
 import numpy as np
@@ -56,9 +56,13 @@ def find_all_antinodes(
     for antenna1, antenna2 in combinations(antennas, 2):
         delta = antenna1 - antenna2 # vector from antenna 2 to 1
         for loc, sign in [(antenna1, +1), (antenna2, -1)]:
-            get_antinode = lambda harmonic_ : loc + harmonic_*sign*delta
-            antinodes = takewhile(within_bounds, map(get_antinode, gen_harmonics()))
-            all_antinodes.update(map(to_tuple, antinodes))
+            all_antinodes |= (aoc.Chainable(gen_harmonics())
+                .map(lambda h : loc + h*sign*delta)
+                .takewhile(within_bounds)
+                .map(to_tuple)
+                .set()
+                .collect()
+            )
     return all_antinodes
 
 def to_tuple(arr: np.ndarray) -> tuple[int, ...]:

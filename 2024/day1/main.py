@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 import sys
+import time
 from collections import Counter
 from pathlib import Path
-import time
 
 path = Path(sys.argv[1])
 assert path.is_file(), path
