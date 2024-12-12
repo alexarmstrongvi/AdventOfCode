@@ -32,17 +32,15 @@ def main() -> None:
     text = aoc.read_input(args.input)
 
     # Solution
-    input_stones = [int(x) for x in text.split()]
+    stones = [int(x) for x in text.split()]
 
     # Part 1
-    stones   = input_stones.copy()
     start    = time.perf_counter()
     n_stones = count_after_blinks(stones, n_blinks = 25)
     elapsed  = time.perf_counter() - start
     print(f'Part 1: {n_stones} [t={elapsed*1000:.3f}ms]')
 
     # Part 2
-    stones   = input_stones.copy()
     start    = time.perf_counter()
     n_stones = count_after_blinks(stones, n_blinks = 75)
     elapsed  = time.perf_counter() - start
