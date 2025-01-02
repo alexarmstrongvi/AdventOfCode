@@ -44,9 +44,9 @@ def main() -> None:
     elapsed = time.perf_counter() - start
     print(f'Part 2: {total_pt2} [t={elapsed*1000:.3f}ms]')
 
-    ############################################################################ 
+    ############################################################################
     # Alternate solutions
-    ############################################################################ 
+    ############################################################################
     # Part 1 & 2 together so updates are partitioned once
     start = time.perf_counter()
     ordered, unordered = partition(nums, in_right_order)
@@ -82,7 +82,7 @@ def main() -> None:
 ################################################################################
 def pages_in_right_order(rules, page_nums) -> bool:
     return all(
-        f'{y}|{x}' not in rules 
+        f'{y}|{x}' not in rules
         # Combinations preserves order
         for x,y in combinations(page_nums,2)
     )
@@ -99,7 +99,7 @@ def sort_pages_naive(rules, page_nums):
             log.error('Infinite loop')
             break
 
-        i,j = idxs 
+        i,j = idxs
         nums[i], nums[j] = nums[j], nums[i]
     return nums
 
@@ -114,7 +114,7 @@ def find_unordered_idxs(rules, page_nums) -> tuple[int,int] | None:
     return None
 
 def partition[T](
-    it: Iterable[T], 
+    it: Iterable[T],
     pred: Callable[[T],bool]
 ) -> tuple[list[T],list[T]]:
     # Option 1: Procedural
@@ -141,5 +141,7 @@ def rules_to_graph(rules):
         before, after = rule.split('|')
         graph[after].add(before)
     return graph
+
+################################################################################
 if __name__ == "__main__":
     main()

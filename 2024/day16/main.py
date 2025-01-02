@@ -92,14 +92,14 @@ def find_best_paths(maze: np.ndarray) -> tuple[set[Position], int | None]:
     target    = get_coords(maze == 'E')[0]
     is_wall   = lambda p : maze[p] == '#'
 
-    # Avoid exploring paths that
-    # 1) already have a cost greater than the optimal cost once that cost is known
-    optimal_cost : int | None = None
+    # Avoid exploring paths that...
+    # 1) already have a cost greater than the min cost once that cost is known
+    min_cost : int | None = None
     # 2) reach a spot already visited via another path but with a higher cost
     # than that other path (include direction to account for cost of turning)
-    visited      : dict[tuple[Position, Direction], int] = {}
+    visited : dict[tuple[Position, Direction], int] = {}
     def is_non_optimal_path(path: ReindeerPath) -> bool:
-        if optimal_cost is not None and path.cost > optimal_cost:
+        if min_cost is not None and path.cost > min_cost:
             return True
         state = (path.pos, path.dir)
         if state in visited and visited[state] < path.cost:
@@ -131,22 +131,16 @@ def find_best_paths(maze: np.ndarray) -> tuple[set[Position], int | None]:
             if is_non_optimal_path(path_new):
                 continue
             if path_new.pos == target:
-                assert optimal_cost is None or optimal_cost == path_new.cost
-                optimal_cost = path_new.cost
+                assert min_cost is None or min_cost == path_new.cost
+                min_cost = path_new.cost
                 successul_paths.append(path_new)
             heapq.heappush(paths_in_progress, path_new)
 
     all_path_tiles = reduce(set.union, (p.tiles for p in successul_paths))
-    min_cost = only(p.cost for p in successul_paths)
     return all_path_tiles, min_cost
 
 def get_coords(mask: np.ndarray) -> list[Position]:
     return [(int(x), int(y)) for x,y in zip(*np.where(mask))]
-
-def only[T](iterable: Iterable[T]) -> T:
-    if len(s := set(iterable)) != 1:
-        raise ValueError(f'Iterable has {len(s)} unique values')
-    return next(iter(s))
 
 ################################################################################
 if __name__ == "__main__":

@@ -54,10 +54,10 @@ def main() -> None:
         region = determine_region(garden, unmapped_locations.pop())
         cost += region.fence_cost()
         discount_cost += region.fence_cost(bulk_discount=True)
-        unmapped_locations -= set(region.locations.keys())
+        unmapped_locations -= set(region.fences_per_plot.keys())
 
         # DEBUG
-        context = get_context(garden, set(region.locations.keys()))
+        context = get_context(garden, set(region.fences_per_plot.keys()))
         log.debug('Determined fences around region:\n%s', context)
         log.debug('%d fences and %d sides', region.perimeter, region.n_sides)
         log.info('%s', region)
@@ -86,7 +86,7 @@ class Direction(Enum):
 @dataclass
 class Region:
     plant    : str
-    locations: dict[Location, set[Direction]] = field(default_factory=lambda : defaultdict(set))
+    fences_per_plot: dict[Location, set[Direction]] = field(default_factory=lambda : defaultdict(set))
 
     def fence_cost(self, bulk_discount: bool = False) -> int:
         if bulk_discount:
@@ -95,20 +95,20 @@ class Region:
 
     @property
     def area(self) -> int:
-        return len(self.locations)
+        return len(self.fences_per_plot)
 
     @cached_property
     def perimeter(self) -> int:
-        return sum(len(fences) for fences in self.locations.values())
+        return sum(len(fences) for fences in self.fences_per_plot.values())
 
     @cached_property
     def n_sides(self) -> int:
         n_sides = self.perimeter
-        for loc, fences in self.locations.items():
+        for loc, fences in self.fences_per_plot.items():
             # Don't count fences above (below) if there is a plant in the region
             # to the right that also has a fence above (below)
-            if (nloc := loc + Direction.RIGHT) in self.locations:
-                nfences = self.locations[nloc]
+            if (nloc := loc + Direction.RIGHT) in self.fences_per_plot:
+                nfences = self.fences_per_plot[nloc]
                 if Direction.DOWN in fences and Direction.DOWN in nfences:
                     n_sides -= 1
                 if Direction.UP in fences and Direction.UP in nfences:
@@ -116,8 +116,8 @@ class Region:
 
             # Don't count fences to the right (left) if there is a plant in the region
             # below that also has a fence to the right (left)
-            if (nloc := loc + Direction.DOWN) in self.locations:
-                nfences = self.locations[nloc]
+            if (nloc := loc + Direction.DOWN) in self.fences_per_plot:
+                nfences = self.fences_per_plot[nloc]
                 if Direction.RIGHT in fences and Direction.RIGHT in nfences:
                     n_sides -= 1
                 if Direction.LEFT in fences and Direction.LEFT in nfences:
@@ -142,12 +142,12 @@ def determine_region(
     outside_garden = lambda l : not (0 <= l[0] < m and 0 <= l[1] < n)
     different_plant = lambda l : garden[l] != region.plant
 
-    fences = region.locations[loc]
+    fences = region.fences_per_plot[loc]
     for direction in Direction:
         nloc = loc + direction
         if outside_garden(nloc) or different_plant(nloc):
             fences.add(direction)
-        elif nloc not in region.locations:
+        elif nloc not in region.fences_per_plot:
             determine_region(garden, nloc, region)
 
     # DEBUG
