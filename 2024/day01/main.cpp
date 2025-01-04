@@ -25,26 +25,20 @@ std::pair<std::vector<int>, std::vector<int>> read_data(const fs::path &filepath
 
 ////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
-    // Initialize
+    // Boilerplate
     time_point start{};
     double elapsed{0};
 
-    // Get input
     const aoc::InputPathArgs args = aoc::parse_args(argc, argv);
     if (args.help) {
         std::cerr << args.help_msg << std::endl;
         return 1;
     }
 
-    if (args.verbose) {
-        std::cout << "INFO | Reading file " << args.input_path << '\n';
-    }
-
     auto [left, right] = read_data(args.input_path);
 
     ////////////////////////////////////////
     // Solution
-    ////////////////////////////////////////
 
     // Part 1
     start = clock_type::now();
@@ -70,7 +64,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Part 1: " << total_diff << " [" << elapsed << "ms]" << std::endl;
 
     // Part 2
-    start = std::chrono::high_resolution_clock::now();
+    start = clock_type::now();
     const aoc::Counter cnt(right);
 
     // Option 1: Procedural
@@ -109,12 +103,6 @@ std::pair<std::vector<int>, std::vector<int>> read_data(const fs::path &filepath
         if (!(iss >> val1 >> val2)) {
             throw aoc::FileParseException(line, line_num);
         }
-
-        // std::string remainder;
-        // if (iss >> remainder) {
-        //     throw aoc::FileParseException("Extra data: " + line, line_num);
-        // }
-
         left.push_back(val1);
         right.push_back(val2);
     }
