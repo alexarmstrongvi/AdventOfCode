@@ -1,3 +1,7 @@
+////////////////////////////////////////////////////////////////////////////////
+// Day 01: Historian Hysteria
+////////////////////////////////////////////////////////////////////////////////
+
 // 1st party
 #include "aoc_utils.hpp"
 
@@ -28,17 +32,11 @@ int main(int argc, char *argv[]) {
     // Boilerplate
     time_point start{};
     double elapsed{0};
-
     const aoc::InputPathArgs args = aoc::parse_args(argc, argv);
-    if (args.help) {
-        std::cerr << args.help_msg << std::endl;
-        return 1;
-    }
-
-    auto [left, right] = read_data(args.input_path);
 
     ////////////////////////////////////////
     // Solution
+    auto [left, right] = read_data(args.input_path);
 
     // Part 1
     start = clock_type::now();
@@ -60,12 +58,12 @@ int main(int argc, char *argv[]) {
         /* reduce    = */ std::plus<>(),
         /* transform = */ [](int a, int b) { return std::abs(a - b); }
     );
-    elapsed = (clock_type::now() - start).count() / std::pow(10, 6);
-    std::cout << "Part 1: " << total_diff << " [" << elapsed << "ms]" << std::endl;
+    elapsed = (clock_type::now() - start).count() / std::pow(10, 3);
+    std::cout << "Part 1: " << total_diff << " [" << elapsed << "us]" << std::endl;
 
     // Part 2
-    start = clock_type::now();
     const aoc::Counter cnt(right);
+    start = clock_type::now();
 
     // Option 1: Procedural
     // int score = 0;
@@ -80,8 +78,8 @@ int main(int argc, char *argv[]) {
         0,
         [&cnt](int sum, const int x) { return sum + x * cnt[x]; }
     );
-    elapsed = (clock_type::now() - start).count() / std::pow(10, 6);
-    std::cout << "Part 2: " << score << " [" << elapsed << "ms]" << std::endl;
+    elapsed = (clock_type::now() - start).count() / std::pow(10, 3);
+    std::cout << "Part 2: " << score << " [" << elapsed << "us]" << std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
