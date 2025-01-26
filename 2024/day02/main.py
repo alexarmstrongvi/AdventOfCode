@@ -1,8 +1,24 @@
 #!/usr/bin/env python
+"""
+Red-Nosed Reports
+=================
+
+# Example input:
+7 6 4 2 1
+1 2 7 8 9
+9 7 6 2 1
+1 3 2 4 5
+8 6 4 4 1
+1 3 6 7 9
+
+Part 1: 2 safe reports
+Part 2: 4 tolerable reports
+"""
 # Standard library
+from collections.abc import Sequence
 import itertools
 import logging
-from collections.abc import Sequence
+import time
 
 # 1st party
 import aoc_utils as aoc
@@ -16,16 +32,22 @@ def main() -> None:
     aoc.configure_logging(args.log_level)
     text = aoc.read_input(args.input)
 
-    # Setup
+    # Solution
     reports = [[int(n) for n in l.split()] for l in text.splitlines()]
 
-    # Solution
-    n = sum(map(is_safe_report, reports))
-    print('Part 1:', n)
+    # Part 1
+    start   = time.perf_counter()
+    n       = sum(map(is_safe_report, reports))
+    elapsed = time.perf_counter() - start
+    print('Part 1:', n, f'[{elapsed*1000:.3f}ms]')
 
+    # Part 2
+    start   = time.perf_counter()
     n = sum(map(is_tolerable_report, reports))
-    print('Part 2:', n)
+    elapsed = time.perf_counter() - start
+    print('Part 2:', n, f'[{elapsed*1000:.3f}ms]')
 
+################################################################################
 def is_safe_report(nums: Sequence[int]) -> bool:
     if len(nums) <= 1:
         return True
