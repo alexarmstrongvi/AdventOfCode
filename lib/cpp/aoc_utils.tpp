@@ -1,18 +1,24 @@
 #include <map>
 #include <vector>
+#include <concepts>
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace aoc_utils {
 ////////////////////////////////////////////////////////////////////////////////
 
-template<typename T>
+template <std::integral T>
+size_t uz(T index) {
+    return static_cast<size_t>(index);
+}
+
+template<typename Key, typename CountType = int64_t>
 class Counter {
   private:
-    std::map<T, size_t> counts_;
+    std::map<Key, CountType> counts_;
   public:
     Counter() = default;
 
-    explicit Counter(const std::vector<T>& elements) {
+    explicit Counter(const std::vector<Key>& elements) {
         update(elements);
     }
 
@@ -21,7 +27,7 @@ class Counter {
      * @param key Element to look up
      * @return Count of element (0 if not present)
      */
-    size_t operator[](const T& key) const {
+    CountType operator[](const Key& key) const {
         auto it = counts_.find(key);
         if (it == counts_.end()) {
             return 0;
@@ -34,7 +40,7 @@ class Counter {
      * @param key Element to look up/modify
      * @return Reference to count for element
      */
-    size_t& operator[](const T& key) {
+    CountType& operator[](const Key& key) {
         return counts_[key];
     }
 
@@ -42,8 +48,8 @@ class Counter {
      * Modify count of elements
      * @param elements Elements to increment
      */
-    void update(const std::vector<T>& elements) {
-        for (const T& e : elements) {
+    void update(const std::vector<Key>& elements) {
+        for (const Key& e : elements) {
             counts_[e]++;
         }
     }

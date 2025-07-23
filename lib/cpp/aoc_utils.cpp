@@ -4,16 +4,14 @@
 
 // Questions:
 // Does C++ have something like a csv-reader to handle common read cases
-// printing collections
 // Logging levels
-// Benchmarking
-// Suggestions to speed it up
 
 // 1st party
 #include "aoc_utils.hpp"
 
 // Standard library
 #include <filesystem>
+#include <iostream>
 #include <vector>
 
 // Aliases
@@ -22,6 +20,27 @@ namespace fs = std::filesystem;
 ////////////////////////////////////////////////////////////////////////////////
 namespace aoc_utils {
 ////////////////////////////////////////////////////////////////////////////////
+MissingArgsException::MissingArgsException(const std::string &msg) 
+    : std::runtime_error(msg) {}
+ExtraArgsException::ExtraArgsException(const std::string &msg) 
+    : std::runtime_error(msg) {}
+
+FileNotFoundException::FileNotFoundException(const std::string &msg) 
+    : std::runtime_error(msg) {}
+FileNotFoundException::FileNotFoundException(const std::filesystem::path &path)
+    : std::runtime_error("File not found: " + path.string()) {}
+
+FileReadException::FileReadException(const std::string &msg) 
+    : std::runtime_error(msg) {}
+FileReadException::FileReadException(const std::filesystem::path &path)
+    : std::runtime_error("Failed to read file: " + path.string()) {}
+
+FileParseException::FileParseException(const std::string &line)
+    : std::runtime_error(std::format("Failed to parse line: '{}'", line)) {}
+FileParseException::FileParseException(const std::string &line, const int64_t line_num)
+    : std::runtime_error(std::format("Failed to parse line {}: '{}'", line_num, line)) {}
+
+ArgvParseException::ArgvParseException(const std::string &msg) : std::runtime_error(msg) {}
 
 InputPathArgs parse_args(int argc, char *argv[]) {
     InputPathArgs options;
@@ -32,8 +51,8 @@ InputPathArgs parse_args(int argc, char *argv[]) {
         return s == "-h" || s == "--help";
     });
     if (help_it != args.cend()) {
-        options.help = true;
-        return options;
+        std::cerr << options.help_msg << std::endl;
+        std::exit(1);
     }
 
     // Parse keyword arguments
@@ -75,6 +94,4 @@ InputPathArgs parse_args(int argc, char *argv[]) {
     return options;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// end AoC_Utils
-} 
+} // namespace aoc_utils

@@ -3,88 +3,32 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // 1st party
+#include "run.hpp"
 #include "aoc_utils.hpp"
 
 // Standard library
 #include <algorithm>
-#include <chrono>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <numeric>
-#include <sstream>
-#include <utility>
+#include <ranges>
 #include <vector>
 
 // Aliases
-namespace fs     = std::filesystem;
 namespace aoc    = aoc_utils;
-using clock_type = std::chrono::high_resolution_clock;
-using time_point = std::chrono::time_point<clock_type>;
+namespace fs     = std::filesystem;
+namespace ranges = std::ranges;
+namespace views  = std::views;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Declarations
-std::pair<std::vector<int>, std::vector<int>> read_data(const fs::path &filepath);
+struct InputType {
+    std::vector<int32_t> left;
+    std::vector<int32_t> right;
+};
 
-////////////////////////////////////////////////////////////////////////////////
-int main(int argc, char *argv[]) {
-    // Boilerplate
-    time_point start{};
-    double elapsed{0};
-    const aoc::InputPathArgs args = aoc::parse_args(argc, argv);
-
-    ////////////////////////////////////////
-    // Solution
-    auto [left, right] = read_data(args.input_path);
-
-    // Part 1
-    start = clock_type::now();
-    sort(left.begin(), left.end());
-    sort(right.begin(), right.end());
-
-    // Option 1: Procedural
-    // int total_diff = 0;
-    // for (size_t i = 0; i < left.size(); i++) {
-    //     total_diff += abs(left[i] - right[i]);
-    // }
-
-    // Option 2: Functional
-    int total_diff = std::transform_reduce(
-        /* first1    = */ left.cbegin(),
-        /* last1     = */ left.cend(),
-        /* first2    = */ right.cbegin(),
-        /* init      = */ 0,
-        /* reduce    = */ std::plus<>(),
-        /* transform = */ [](int a, int b) { return std::abs(a - b); }
-    );
-    elapsed = (clock_type::now() - start).count() / std::pow(10, 3);
-    std::cout << "Part 1: " << total_diff << " [" << elapsed << "us]" << std::endl;
-
-    // Part 2
-    const aoc::Counter cnt(right);
-    start = clock_type::now();
-
-    // Option 1: Procedural
-    // int score = 0;
-    // for (const int id : left) {
-    //     score += id * cnt[id];
-    // }
-
-    // Option 2: Functional
-    int score = std::accumulate(
-        left.cbegin(),
-        left.cend(),
-        0,
-        [&cnt](int sum, const int x) { return sum + x * cnt[x]; }
-    );
-    elapsed = (clock_type::now() - start).count() / std::pow(10, 3);
-    std::cout << "Part 2: " << score << " [" << elapsed << "us]" << std::endl;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Supporting functions
-std::pair<std::vector<int>, std::vector<int>> read_data(const fs::path &filepath) {
+auto read_data(const fs::path &filepath) -> InputType {
     std::ifstream file(filepath);
     if (!file) {
         throw aoc::FileReadException(filepath);
@@ -106,4 +50,73 @@ std::pair<std::vector<int>, std::vector<int>> read_data(const fs::path &filepath
     }
 
     return {left, right};
+}
+
+template<ranges::view R>
+constexpr auto sum(R&& view) {
+    using T = ranges::range_value_t<R>;
+    return ranges::fold_left(view, T{}, std::plus<>{});
+};
+
+auto compute_total_diff(InputType& input) -> int64_t {
+    auto& [left, right] = input;
+
+    ranges::sort(left);
+    ranges::sort(right);
+
+    // Option 1: Procedural
+    // int total_diff = 0;
+    // for (size_t i = 0; i < left.size(); i++) {
+    //     total_diff += abs(left[i] - right[i]);
+    // }
+    // return total_diff;
+
+    // Option 2: Functional
+    constexpr auto diff  = [](int a, int b) {return std::abs(a - b);};
+    // return std::transform_reduce(
+    //     /* first1    = */ left.cbegin(),
+    //     /* last1     = */ left.cend(),
+    //     /* first2    = */ right.cbegin(),
+    //     /* init      = */ 0,
+    //     /* reduce    = */ std::plus<>(),
+    //     /* transform = */ diff
+    // );
+
+    // Option 3: Functional with Ranges/Views
+    return sum(views::zip_transform(diff, left, right));
+
+}
+
+auto compute_score(const InputType& input) -> int64_t {
+    const auto& [left, right] = input;
+
+    const aoc::Counter cnt(right);
+
+    // Option 1: Procedural
+    // int64_t score = 0;
+    // for (const int32_t x : left) {
+    //     score += x * cnt[x];
+    // }
+    // return score;
+
+    // Option 2: Functional
+    return sum(left | views::transform([&cnt](int32_t x) { return x * cnt[x];}));
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+int main(int argc, char *argv[]) {
+    const aoc::InputPathArgs args = aoc::parse_args(argc, argv);
+    aoc::run<InputType>(
+        args.input_path,
+        read_data,
+        /* part1 = */ compute_total_diff,
+        /* part2 = */ compute_score
+    );
+    // aoc::benchmark<InputType>(
+    //     args.input_path,
+    //     read_data,
+    //     /* part1 = */ compute_total_diff,
+    //     /* part2 = */ compute_score
+    // );
 }

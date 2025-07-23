@@ -1,3 +1,4 @@
+#pragma once
 #include <filesystem>
 #include <optional>
 #include <stdexcept>
@@ -7,40 +8,36 @@ namespace aoc_utils {
 
 class MissingArgsException : public std::runtime_error {
   public:
-    explicit MissingArgsException(const std::string &msg) : std::runtime_error(msg) {}
+    explicit MissingArgsException(const std::string &msg);
 };
 class ExtraArgsException : public std::runtime_error {
   public:
-    explicit ExtraArgsException(const std::string &msg) : std::runtime_error(msg) {}
+    explicit ExtraArgsException(const std::string &msg);
 };
 class FileNotFoundException : public std::runtime_error {
   public:
-    explicit FileNotFoundException(const std::string &msg) : std::runtime_error(msg) {}
-    explicit FileNotFoundException(const std::filesystem::path &path)
-        : std::runtime_error("File not found: " + path.string()) {}
+    explicit FileNotFoundException(const std::string &msg);
+    explicit FileNotFoundException(const std::filesystem::path &path);
 };
 class FileReadException : public std::runtime_error {
   public:
-    explicit FileReadException(const std::string &msg) : std::runtime_error(msg) {}
-    explicit FileReadException(const std::filesystem::path &path)
-        : std::runtime_error("Failed to read file: " + path.string()) {}
+    explicit FileReadException(const std::string &msg);
+    explicit FileReadException(const std::filesystem::path &path);
 };
 class FileParseException : public std::runtime_error {
   public:
-    explicit FileParseException(const std::string &line, const size_t line_num)
-        : std::runtime_error(
-              "Failed to parse line " + std::to_string(line_num) + ": '" + line + "'"
-          ) {}
+    explicit FileParseException(const std::string &line);
+    explicit FileParseException(const std::string &line, const int64_t line_num);
 };
 class ArgvParseException : public std::runtime_error {
   public:
-    explicit ArgvParseException(const std::string &msg) : std::runtime_error(msg) {}
+    explicit ArgvParseException(const std::string &msg);
 };
 
 struct InputPathArgs {
-    std::string input_path;
+    std::filesystem::path input_path;
     bool verbose = false;
-    std::optional<size_t> max_lines;
+    std::optional<int64_t> max_lines;
     // Help
     bool help = false;
     const std::string help_msg = 
@@ -53,8 +50,6 @@ struct InputPathArgs {
 
 InputPathArgs parse_args(int argc, char *argv[]);
 
-////////////////////////////////////////////////////////////////////////////////
-// end AoC_Utils
-} 
+}
 
 #include "aoc_utils.tpp"

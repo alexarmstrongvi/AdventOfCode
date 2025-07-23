@@ -16,6 +16,9 @@ mkdir build
 ################################################################################
 # echo "Compiling..."
 ops=''
+ops="$ops -std=c++20"
+ops="$ops -stdlib=libc++"
+ops="$ops -g"
 ops="$ops -Wall"
 ops="$ops -Wextra"
 ops="$ops -Wpedantic"
@@ -23,11 +26,9 @@ ops="$ops -Wpedantic"
 ops="$ops -Wno-unused-comparison"
 ops="$ops -Wno-unused-value"
 ops="$ops -Wno-unused-variable"
-ops="$ops -std=c++20"
-ops="$ops -stdlib=libc++"
-ops="$ops -g"
-ops="$ops -I$AOC_PATH/aoc_utils/cpp $AOC_PATH/aoc_utils/cpp/aoc_utils.cpp"
+ops="$ops -I$AOC_PATH/lib/cpp/ $AOC_PATH/lib/cpp/aoc_utils.cpp"
 ops="$ops -o $target_exe"
+echo clang++ $ops "$main_src"
 clang++ $ops "$main_src"
 
 if [ $? -eq 0 ]; then
