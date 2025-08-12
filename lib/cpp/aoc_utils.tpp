@@ -1,6 +1,9 @@
-#include <map>
-#include <vector>
 #include <concepts>
+#include <functional>
+#include <map>
+#include <algorithm> // provides fold_left
+#include <ranges>
+#include <vector>
 
 ////////////////////////////////////////////////////////////////////////////////
 namespace aoc_utils {
@@ -55,5 +58,11 @@ class Counter {
     }
 };
 
+template <std::ranges::input_range R>
+constexpr auto sum(R&& rng)
+{
+    using T = std::ranges::range_value_t<R>;
+    return std::ranges::fold_left(std::forward<R>(rng), T{}, std::plus{});
+}
 ////////////////////////////////////////////////////////////////////////////////
 }

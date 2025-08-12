@@ -40,11 +40,9 @@ def main() -> None:
         x,y,do,dont = match.groups()
         if do:
             is_enabled = True
-            continue
         elif dont:
             is_enabled = False
-            continue
-        if is_enabled: 
+        elif is_enabled: 
             total += int(x) * int(y)
     elapsed = time.perf_counter() - start
     print(f'Part 2: {total} [t={elapsed*1000:.3f}ms]')

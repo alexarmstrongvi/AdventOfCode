@@ -119,8 +119,6 @@ if(USING_CLANG)
     set(WARNINGS_CXX ${WARNINGS_CLANG})
 elseif(USING_GNU)
     set(WARNINGS_CXX ${WARNINGS_GNU})
-elseif(USING_GNU)
-    set(WARNINGS_CXX ${WARNINGS_GNU})
 endif()
 
 # TODO: support warnings for multiple languages

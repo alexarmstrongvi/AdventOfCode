@@ -11,6 +11,7 @@
 
 // Standard library
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <vector>
 
@@ -92,6 +93,29 @@ InputPathArgs parse_args(int argc, char *argv[]) {
     }
 
     return options;
+}
+
+auto read_text(const fs::path &filepath) -> std::string {
+    std::ifstream file(filepath, std::ios::binary | std::ios::ate);
+    if (!file) {
+        throw FileReadException(filepath);
+    };
+
+    const int64_t file_ssize { file.tellg() };
+    if (file_ssize == -1) {
+        std::runtime_error(
+            std::format("Failed to determine filesize: {}", filepath.string())
+        );
+    }
+
+    std::string text;
+    text.resize(uz(file_ssize));
+
+    file.seekg(0);
+    file.read(text.data(), file_ssize);
+    file.close();
+
+    return text;
 }
 
 } // namespace aoc_utils

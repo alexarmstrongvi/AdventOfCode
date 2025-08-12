@@ -104,15 +104,15 @@ void print_result(
     std::optional<Solution> solution
 ) {
     std::cout << std::format(
-        "{}: {} [{:.3f} us]", 
+        "{}: {} [{:.1f} us]", 
         part, answer, to_microsec(elapsed)
     );
     if (solution.has_value()) {
         const auto& sol = solution.value();
         if (answer != sol.answer) {
-            std::cout << ansi::red << " [Wrong! " << ansi::reset;
+            std::cout << "[" << ansi::red << "Wrong! " << ansi::reset;
         } else {
-            std::cout << ansi::green << " [Correct!" << ansi::reset;
+            std::cout << "[" << ansi::green << "Correct!" << ansi::reset;
         }
         const auto diff = static_cast<double>((sol.time - elapsed).count());
         const auto p_diff = (diff / static_cast<double>(sol.time.count())) * 100;
@@ -122,9 +122,9 @@ void print_result(
             std::cout << ansi::red << std::format(" {:.1f}% Slower", p_diff) << ansi::reset;
         }
         std::cout << std::format(
-            ", baseline: {:.3f}us, diff={}ns]",
-            to_microsec(solution.value().time),
-            (sol.time - elapsed).count()
+            ", baseline: {:.1f}us]", //, diff={}ns]",
+            to_microsec(solution.value().time)
+            // (sol.time- elapsed).count()
         );
     }
     std::cout << std::endl;
@@ -137,11 +137,11 @@ void print_benchmark_stats(std::vector<Clock::duration>& timings) {
     const auto mad = median_absolute_deviation(timings, median);
     const auto [it_min, it_max] = std::ranges::minmax_element(timings);
     std::println(
-        "median = {} +/- {}; range=[{} to {}]; N={}", 
-        median,
-        mad,
-        *it_min,
-        *it_max,
+        "median = {:.1f} +/- {:.1f}; range=[{:.1f} to {:.1f}]; N={}", 
+        to_microsec(median),
+        to_microsec(mad),
+        to_microsec(*it_min),
+        to_microsec(*it_max),
         timings.size()
     );
 }

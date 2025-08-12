@@ -50,6 +50,8 @@ struct InputPathArgs {
 
 InputPathArgs parse_args(int argc, char *argv[]);
 
+auto read_text(const std::filesystem::path& filepath) -> std::string;
+
 }
 
 #include "aoc_utils.tpp"

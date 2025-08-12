@@ -1,6 +1,9 @@
-build*/
+build*
 *solution*.txt
 *input*.txt
-main
-main.dSYM/
+.cache
+
+# C++
+CMakeFiles
+CMakeCache.txt
 .clang-format
