@@ -13,6 +13,7 @@
 #include <sstream>
 #include <vector>
 
+namespace {
 // Aliases
 namespace fs     = std::filesystem;
 namespace aoc    = aoc_utils;
@@ -28,25 +29,26 @@ constexpr bool is_safe_level(int x, int y, bool is_increasing) {
 
 template<ranges::random_access_range R>
 bool is_safe_report(const R& nums) {
-    return ranges::all_of(
-        nums | views::pairwise,
-        [is_increasing = nums[0] < nums[1]]
-        (const auto pair){
-            const auto [x, y] = pair;
-            return is_safe_level(x, y, is_increasing);
-        }
-    );
-
     // Option 1: Procedural
-    // if (nums.size() <= 1) {
-    //     return true;
-    // }
-    // const bool is_increasing = nums[0] < nums[1];
-    // for (size_t i=0; i < nums.size()-1; ++i) {
-    //     if (!is_safe_level(nums[i], nums[i+1], is_increasing)) {
-    //         return false;
+    // return ranges::all_of(
+    //     nums | views::pairwise,
+    //     [is_increasing = nums[0] < nums[1]]
+    //     (const auto pair){
+    //         const auto [x, y] = pair;
+    //         return is_safe_level(x, y, is_increasing);
     //     }
-    // }
+    // );
+
+    // Option 2: Procedural
+    if (nums.size() <= 1) {
+        return true;
+    }
+    const bool is_increasing = nums[0] < nums[1];
+    for (size_t i=0; i < nums.size()-1; ++i) {
+        if (!is_safe_level(nums[i], nums[i+1], is_increasing)) {
+            return false;
+        }
+    }
 
     return true;
 }
@@ -131,6 +133,7 @@ auto read_data(const fs::path &filepath) -> InputType {
     return rows;
 }
 
+}
 ////////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
     const aoc::InputPathArgs args = aoc::parse_args(argc, argv);

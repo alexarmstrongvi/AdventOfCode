@@ -41,21 +41,23 @@ auto median(std::vector<Clock::duration>& data) -> Clock::duration {
     return data[data.size()/2];
 }
 
-auto median_absolute_deviation(
-    std::vector<Clock::duration>& data,
-    Clock::duration med
-) -> Clock::duration {
-    if (data.empty()) {
-        throw std::domain_error("Cannot compute MAD of empty vector");
-    }
+namespace {
+    auto median_absolute_deviation(
+        std::vector<Clock::duration>& data,
+        Clock::duration med
+    ) -> Clock::duration {
+        if (data.empty()) {
+            throw std::domain_error("Cannot compute MAD of empty vector");
+        }
 
-    std::vector<Clock::duration> deviations;
-    deviations.reserve(data.size());
-    for (auto x : data) {
-        deviations.push_back(std::chrono::abs(x - med));
-    }
+        std::vector<Clock::duration> deviations;
+        deviations.reserve(data.size());
+        for (auto x : data) {
+            deviations.push_back(std::chrono::abs(x - med));
+        }
 
-    return median(deviations);
+        return median(deviations);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

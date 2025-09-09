@@ -15,6 +15,7 @@
 #include <ranges>
 #include <vector>
 
+namespace {
 // Aliases
 namespace aoc    = aoc_utils;
 namespace fs     = std::filesystem;
@@ -56,7 +57,7 @@ template<ranges::view R>
 constexpr auto sum(R&& view) {
     using T = ranges::range_value_t<R>;
     return ranges::fold_left(view, T{}, std::plus<>{});
-};
+}
 
 auto compute_total_diff(InputType& input) -> int64_t {
     auto& [left, right] = input;
@@ -73,24 +74,24 @@ auto compute_total_diff(InputType& input) -> int64_t {
 
     // Option 2: Functional
     constexpr auto diff  = [](int a, int b) {return std::abs(a - b);};
-    // return std::transform_reduce(
-    //     /* first1    = */ left.cbegin(),
-    //     /* last1     = */ left.cend(),
-    //     /* first2    = */ right.cbegin(),
-    //     /* init      = */ 0,
-    //     /* reduce    = */ std::plus<>(),
-    //     /* transform = */ diff
-    // );
+    return std::transform_reduce(
+        /* first1    = */ left.cbegin(),
+        /* last1     = */ left.cend(),
+        /* first2    = */ right.cbegin(),
+        /* init      = */ 0,
+        /* reduce    = */ std::plus<>(),
+        /* transform = */ diff
+    );
 
     // Option 3: Functional with Ranges/Views
-    return sum(views::zip_transform(diff, left, right));
+    // return sum(views::zip_transform(diff, left, right));
 
 }
 
 auto compute_score(const InputType& input) -> int64_t {
     const auto& [left, right] = input;
 
-    const aoc::Counter cnt(right);
+    const aoc::Counter<int> cnt(right);
 
     // Option 1: Procedural
     // int64_t score = 0;
@@ -101,6 +102,8 @@ auto compute_score(const InputType& input) -> int64_t {
 
     // Option 2: Functional
     return sum(left | views::transform([&cnt](int32_t x) { return x * cnt[x];}));
+
+}
 
 }
 

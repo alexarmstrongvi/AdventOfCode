@@ -2,6 +2,7 @@
 #include <functional>
 #include <map>
 #include <algorithm> // provides fold_left
+// #include <numeric>
 #include <ranges>
 #include <vector>
 
@@ -63,6 +64,7 @@ constexpr auto sum(R&& rng)
 {
     using T = std::ranges::range_value_t<R>;
     return std::ranges::fold_left(std::forward<R>(rng), T{}, std::plus{});
+    // return std::accumulate(rng.begin(), rng.end(), T{}, std::plus{});
 }
 ////////////////////////////////////////////////////////////////////////////////
 }

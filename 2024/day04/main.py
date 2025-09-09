@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# Standard library
 import logging
 import time
 from functools import lru_cache, partial

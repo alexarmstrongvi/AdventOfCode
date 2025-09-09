@@ -18,8 +18,18 @@ target_link_options(myproject_options INTERFACE "${myproject_LINK_OPTIONS}")
 
 add_subdirectory(lib/cpp)
 
-# add_subdirectory(2023)
-# add_subdirectory(2024)
-add_subdirectory(2024/day01)
-add_subdirectory(2024/day02)
-add_subdirectory(2024/day03)
+file(
+    GLOB_RECURSE AOC_SOURCES
+    RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*/day*/main.cpp"
+)
+foreach(src ${AOC_SOURCES})
+    get_filename_component(dir ${src} DIRECTORY)
+    string(REPLACE "/" "_" exe_name ${dir})
+
+    add_executable(${exe_name} ${src})
+    set_target_properties(${exe_name} PROPERTIES
+        RUNTIME_OUTPUT_NAME "main"
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${dir}/$<CONFIG>
+    )
+    target_link_libraries(${exe_name} PRIVATE aoc_utils myproject_warnings myproject_options)
+endforeach()

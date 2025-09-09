@@ -1,3 +1,6 @@
+"""
+Utilites for Advent of Code challenges
+"""
 # Standard library
 import argparse
 import builtins
@@ -34,7 +37,7 @@ def parse_args() -> argparse.Namespace:
 
     return parser.parse_args()
 
-def read_input(input) -> list[str]:
+def read_input(input) -> str:
     try:
         with input as f:
             # Read the entire content

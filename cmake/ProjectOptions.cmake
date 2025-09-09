@@ -53,6 +53,7 @@ set(WARNINGS_CLANG
     -Wno-poison-system-directories
     # Not trying to be backwards compatible with C++98
     -Wno-c++98-compat
+    -Wno-pre-c++20-compat-pedantic
     # Not trying to optimize memory layout to this extent
     # "padding B with N bytes to align C"
     -Wno-padded

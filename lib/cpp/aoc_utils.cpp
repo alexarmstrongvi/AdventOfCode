@@ -43,6 +43,13 @@ FileParseException::FileParseException(const std::string &line, const int64_t li
 
 ArgvParseException::ArgvParseException(const std::string &msg) : std::runtime_error(msg) {}
 
+MissingArgsException::~MissingArgsException()   noexcept = default;
+ExtraArgsException::~ExtraArgsException()       noexcept = default;
+FileNotFoundException::~FileNotFoundException() noexcept = default;
+FileReadException::~FileReadException()         noexcept = default;
+FileParseException::~FileParseException()       noexcept = default;
+ArgvParseException::~ArgvParseException()       noexcept = default;
+
 InputPathArgs parse_args(int argc, char *argv[]) {
     InputPathArgs options;
     std::vector<std::string> args(argv + 1, argv + argc);
@@ -99,7 +106,7 @@ auto read_text(const fs::path &filepath) -> std::string {
     std::ifstream file(filepath, std::ios::binary | std::ios::ate);
     if (!file) {
         throw FileReadException(filepath);
-    };
+    }
 
     const int64_t file_ssize { file.tellg() };
     if (file_ssize == -1) {
